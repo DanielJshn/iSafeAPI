@@ -1,14 +1,16 @@
 using System.Data;
+using System.IdentityModel.Tokens.Jwt;
 using api.Controllers;
 using apitest;
 using Dapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace apitest;
-
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
@@ -27,144 +29,254 @@ private readonly ILogger<UserController> _logger;
 
 
 
-[HttpGet("GetUser/{id}")]
-    public Passwords GetPasswords(int id)
+[HttpGet("GetUser")]
+   public IEnumerable<Passwords> GetPasswords()
 {
-            var authHeader = Request.Headers[HeaderNames.Authorization];
-            if (authHeader != null && authHeader.StartsWith("Bearer "))
-                 {
-                  // Извлечение токена из заголовка Authorization
-                  string accessToken = authHeader.Substring("Bearer ".Length).Trim();
-                  Console.WriteLine(ac)
+    string? accessToken = HttpContext.Request.Headers["Authorization"];
+        if (accessToken != null && accessToken.StartsWith("Bearer "))
+        {
+            accessToken = accessToken.Substring("Bearer ".Length);
+        }
+    accessToken = accessToken?.Trim();
+    int userId = 0;
 
-            // Дальнейшая обработка токена...
-            
-            // Вернуть успешный результат или выполнить необходимые действия с токеном
-            } 
-            else 
-            {
-                  throw new Exception("AuthToken is null");
-            }
-    string sql = @"
-        SELECT * from dbo.[Passwords] Where id ="+ id.ToString();
-        Passwords passwords = _dapper.LoadDataSingle<Passwords>(sql);
+    string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
+    using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        {
+        conn.Open();
+        SqlCommand command = new SqlCommand(sql0, conn);
+        object result = command.ExecuteScalar();
+        if (result != null)
+        {
+            userId = Convert.ToInt32(result);
+        }
+        conn.Close();
+        }
 
-         string sql2 = @"
-       SELECT * from dbo.AdditionalFields Where passwordId  ="+ id.ToString();
-        IEnumerable<AdditionalField> additionalField = _dapper.LoadData<AdditionalField>(sql2);
 
-        passwords.additionalFields = additionalField.AsList();
+        string sql = @"SELECT * FROM dbo.[Passwords] WHERE UserId =" + userId;
+    IEnumerable<Passwords> passwords = _dapper.LoadData<Passwords>(sql);
 
- 
-        return passwords;
+    List<Passwords> resultPasswords = new List<Passwords>();
+
+        foreach (var password in passwords)
+        {
+            string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId =" + password.id;
+            IEnumerable<AdditionalField> additionalFields = _dapper.LoadData<AdditionalField>(sql2);   
+            password.additionalFields = additionalFields.ToList();
+            resultPasswords.Add(password);
+        }
+    return resultPasswords;
+
+
+
+
 }
   
 [HttpPost("AddUser")]
-    public IActionResult AddUser([FromBody] Passwords userInput)
-
-    {
+    public IActionResult AddUser( [FromBody]Passwords userInput)
+    {      
         if (userInput == null || userInput.additionalFields == null)
         {
             return BadRequest("Invalid input data");
+        }    
+    string? accessToken = HttpContext.Request.Headers["Authorization"];  
+        if (accessToken != null && accessToken.StartsWith("Bearer "))
+        {
+            accessToken = accessToken.Substring("Bearer ".Length);
+        }
+         accessToken = accessToken?.Trim();
+    int userId = 0;
+
+    string getUserIdQuery = @"SELECT UserId FROM dbo.Tokens WHERE TokenValue = '" + accessToken?.Trim() + "'";
+    using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))  
+        {
+            conn.Open();
+            SqlCommand command = new SqlCommand(getUserIdQuery, conn);
+            object result = command.ExecuteScalar();
+            if (result != null)
+            {
+                userId = Convert.ToInt32(result);
+            }
+            conn.Close();
+        }
+       
+
+        if (userId == 0)
+        {
+            return BadRequest("Invalid or missing UserId");
         }
 
-      string passwordSql = @"
-    INSERT INTO dbo.Passwords (
-        [organization],
-        [title]
-    ) VALUES (
-        '" + userInput.organization +
+      string passwordSql = @" INSERT INTO dbo.Passwords ([UserId], [organization], [title])
+        VALUES
+        ('" + userId +
+        "', '" + userInput.organization + 
         "', '" + userInput.title + "');";
 
-
-      
         if (!_dapper.ExecuteSQL(passwordSql))
         {
             throw new Exception("Failed to add Passwords");
         }
         string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
 
-        int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
+      int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
 
+foreach (var additionalField in userInput.additionalFields)
+{
+    additionalField.passwordId = insertedPasswordId; // Используем полученный ID из таблицы Passwords
 
-        foreach (var additionalField in userInput.additionalFields)
+    string additionalFieldSql = @"
+        INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
+        VALUES (@passwordId, @title, @value)";
+
+    var fieldParameters = new
+    {
+        passwordId = additionalField.passwordId,
+        title = additionalField.title_,
+        value = additionalField.value
+    };
+
+    if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
+    {
+        throw new Exception("Failed to add AdditionalField");
+    }
+}
+
+return Ok();
+
+    }
+[HttpPut("UpdateUser")]
+public IActionResult UpdateUser([FromBody] Passwords userInput)
+{
+    // Получение AccessToken из заголовка запроса
+    string? accessToken = HttpContext.Request.Headers["Authorization"];
+    int userId = 0;
+
+    // Извлечение UserId из токена
+    if (accessToken != null && accessToken.StartsWith("Bearer "))
+    {
+        accessToken = accessToken.Substring("Bearer ".Length).Trim();
+
+        // Получение UserId из базы данных
+        string getUserIdQuery = "SELECT UserId FROM dbo.Tokens WHERE TokenValue = @TokenValue";
+
+        using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
         {
-         string additionalFieldSql = @"
-    INSERT INTO dbo.AdditionalFields (
-        passwordId,
-        title_,
-        [value]
-    ) VALUES (
-        " + insertedPasswordId + ", '" +
-        additionalField.title_ +
-        "', '" + additionalField.value + "')";
+            conn.Open();
+            SqlCommand command = new SqlCommand(getUserIdQuery, conn);
+            command.Parameters.AddWithValue("@TokenValue", accessToken);
 
+            object result = command.ExecuteScalar();
 
-            if (!_dapper.ExecuteSQL(additionalFieldSql))
+            if (result != null && int.TryParse(result.ToString(), out int userIdFromToken))
             {
-                throw new Exception("Failed to add AdditionalField");
+                userId = userIdFromToken;
             }
-       
-        }
 
-        return Ok();
+            conn.Close();
+        }
     }
 
-[HttpPut("UpdateUser")]
-    public IActionResult UpdateUser([FromBody] Passwords userInput, int id)
+    // Проверка наличия UserId и входных данных
+    if (userId == 0 || userInput == null)
+    {
+        return BadRequest("Invalid input data or user information");
+    }
+
+    // Обновление информации в таблице Passwords
+    string updatePasswordQuery = @"
+        UPDATE dbo.Passwords 
+        SET organization = @organization, title = @title 
+        WHERE UserId = @userId";
+
+    using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+    {
+        conn.Open();
+        SqlCommand command = new SqlCommand(updatePasswordQuery, conn);
+        command.Parameters.AddWithValue("@organization", userInput.organization ?? "");
+        command.Parameters.AddWithValue("@title", userInput.title ?? "");
+        command.Parameters.AddWithValue("@userId", userId);
+
+        int rowsAffected = command.ExecuteNonQuery();
+
+        if (rowsAffected < 1)
         {
-            if (userInput == null || userInput.additionalFields == null)
-            {
-                return BadRequest("Invalid input data");
-            }
-
-            string passwordSql = @"
-                UPDATE dbo.Passwords
-                SET 
-                organization = @org,
-                title = @title
-                WHERE id = @id";
-
-            var passwordParameters = new { org = userInput.organization, title = userInput.title, id };
-
-            if (!_dapper.ExecuteSQL(passwordSql, passwordParameters))
-            {
-                throw new Exception("Failed to update entry in Passwords table");
-            }
-
-          
-                  string sqlAdditional = @"DELETE from dbo.AdditionalFields WHERE passwordId= " + id.ToString();
-
-               
-                if (!_dapper.ExecuteSQL(sqlAdditional))
-                {
-                    throw new Exception("Failed to update entry in  AdditionalFields table");
-                }
-                    string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
-
-                int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
-
-                 foreach (var additionalField in userInput.additionalFields)
-                        {
-                        string additionalFieldSql = @"
-                            INSERT INTO dbo.AdditionalFields (
-                                passwordId,
-                                title_,
-                                [value]
-                            ) VALUES (
-                                " + insertedPasswordId + ", '" +
-                                additionalField.title_ +
-                                "', '" + additionalField.value + "')";
-
-
-            if (!_dapper.ExecuteSQL(additionalFieldSql))
-            {
-                throw new Exception("Failed to add AdditionalField");
-            }
-            }
-
-            return Ok();
+            Console.WriteLine("Failed to update Passwords");
+            return StatusCode(500, "Failed to update Passwords");
         }
+
+        Console.WriteLine("Passwords updated successfully");
+        conn.Close();
+    }
+
+   string deleteAdditionalFieldQuery = @"
+    DELETE FROM dbo.AdditionalFields 
+    WHERE passwordId IN (SELECT id FROM dbo.Passwords)";
+
+using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+{
+    conn.Open();
+    SqlCommand command = new SqlCommand(deleteAdditionalFieldQuery, conn);
+
+    int deletedRows = command.ExecuteNonQuery();
+
+    if (deletedRows < 0)
+    {
+        Console.WriteLine("Failed to delete existing AdditionalField entries");
+        return StatusCode(500, "Failed to delete existing AdditionalField entries");
+    }
+
+    Console.WriteLine("All AdditionalField entries deleted successfully");
+    conn.Close();
+}string getPasswordIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
+
+int currentPasswordId = 0; // Инициализируем текущий passwordId
+
+using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+{
+    conn.Open();
+    SqlCommand getPasswordIdCommand = new SqlCommand(getPasswordIdQuery, conn);
+
+    object result = getPasswordIdCommand.ExecuteScalar();
+
+    if (result != null && int.TryParse(result.ToString(), out int retrievedPasswordId))
+    {
+        currentPasswordId = retrievedPasswordId;
+    }
+    else
+    {
+        // Обработка ошибки, если не удалось получить текущий passwordId
+    }
+
+    conn.Close();
+}
+
+// Добавление новых данных в таблицу AdditionalFields с использованием полученного passwordId
+foreach (var additionalField in userInput.additionalFields)
+{
+    string insertAdditionalFieldQuery = @"
+        INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
+        VALUES (@passwordId, @title, @value)";
+
+    var fieldParameters = new
+    {
+        passwordId = currentPasswordId, // Используем текущий passwordId
+        title = additionalField.title_,
+        value = additionalField.value
+    };
+
+    // Выполнение запроса на добавление данных
+    if (!_dapper.ExecuteSQL(insertAdditionalFieldQuery, fieldParameters))
+    {
+        throw new Exception("Failed to add AdditionalField");
+    }
+}
+
+return Ok();
+    
+}
+
+
 
 [HttpDelete("DeleteUser/{id}")]
     public IActionResult DeleteUser([FromBody] Passwords userInput, int id)

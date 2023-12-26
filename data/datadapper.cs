@@ -20,7 +20,7 @@ namespace api.Controllers
         }
         
 
-            public T LoadDataSingle<T>(string sql)
+            public T LoadDataSingle<T>(string sql, object? parameter = null)
         {
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             return dbConnection.QuerySingle<T>(sql);
@@ -68,7 +68,7 @@ namespace api.Controllers
 }
  public int GetUserIdByEmail(string email)
 {
-    string sqlGetUserId = "SELECT UserId FROM dbo.Auth WHERE Email = @Email";
+    string sqlGetUserId = "SELECT UserId FROM dbo.Tokens WHERE Email = @Email";
     SqlConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
     int userId = dbConnection.QueryFirstOrDefault<int>(sqlGetUserId, new { Email = email });
     return userId;
@@ -79,16 +79,18 @@ namespace api.Controllers
       SqlConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
        
             string sqlInsertToken = @"
-                INSERT INTO Tokens (UserId, TokenValue) 
-                VALUES (@UserId, @TokenValue)";
+                INSERT INTO Tokens ( TokenValue) 
+                VALUES ( @TokenValue)";
 
             dbConnection.Execute(sqlInsertToken, new 
             { 
-                UserId = token.UserId,
+               
                 TokenValue = token.TokenValue
                
             });
         }
+      
+        
     }
 }
 

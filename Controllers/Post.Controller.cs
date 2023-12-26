@@ -82,7 +82,7 @@ namespace apitest
                     [PostContent],
                     [PostCreated],
                     [PostUpdated] 
-                FROM dbo.Posts
+                FROM dbo.Posts 
                     WHERE PostTitle LIKE '%" + searchParam + "%'" +
                         " OR PostContent LIKE '%" + searchParam + "%'";
                 

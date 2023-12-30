@@ -11,20 +11,20 @@ namespace apitest;
 
 public partial class UserData
 {
-    
+
   public int UserId { get; set; }
 
-  public string Name {get; set;}
+  public string Name { get; set; }
 
-  public string UserSecret {get; set;}
+  public string UserSecret { get; set; }
 
   public UserData()
   {
-    if(Name == null)
+    if (Name == null)
     {
       Name = "";
     }
-    if(UserSecret == null)
+    if (UserSecret == null)
     {
       UserSecret = "";
     }

@@ -9,11 +9,11 @@ namespace apitest;
 
 public partial class Passwords
 {
-     public  int UserId {get; set;}
-     public int id { get; set; }
-    public string ?organization { get; set; }
-    public string ?title { get; set; }
-     public List<AdditionalField> additionalFields { get; set; } // Обновлено здесь
+    public int UserId { get; set; }
+    public int id { get; set; }
+    public string? organization { get; set; }
+    public string? title { get; set; }
+    public List<AdditionalField> additionalFields { get; set; } // Обновлено здесь
 
     public Passwords()
     {

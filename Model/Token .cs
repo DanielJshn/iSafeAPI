@@ -4,15 +4,15 @@ namespace apitest
     {
         public int UserId { get; set; }
         public string TokenValue { get; set; }
-    
-    
-    
-     public Token()
-     {
-          if(TokenValue == null )
+
+
+
+        public Token()
         {
-            TokenValue = "";
+            if (TokenValue == null)
+            {
+                TokenValue = "";
+            }
         }
-     }
     }
 }

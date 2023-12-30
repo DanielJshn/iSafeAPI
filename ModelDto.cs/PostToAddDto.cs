@@ -1,22 +1,22 @@
-namespace apitest 
+namespace apitest
 {
     public partial class PostToAddDto
     {
- 
-     public string  PostTitle {get; set;}
-     public string  PostContent {get; set;}
-     
 
-    public PostToAddDto()
-    {
-        if(PostTitle == null )
+        public string PostTitle { get; set; }
+        public string PostContent { get; set; }
+
+
+        public PostToAddDto()
         {
-            PostTitle = "";
+            if (PostTitle == null)
+            {
+                PostTitle = "";
+            }
+            if (PostContent == null)
+            {
+                PostContent = "";
+            }
         }
-        if(PostContent == null )
-        {
-            PostContent = "";
-        }
-    }
     }
 }

@@ -54,7 +54,7 @@ namespace apitest
             {
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = credentials,
-                Expires = DateTime.Now.AddMinutes(1)
+                Expires = DateTime.Now.AddDays(1)
             };
 
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
@@ -100,7 +100,7 @@ namespace apitest
             {
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = credentials,
-                Expires = DateTime.Now.AddMinutes(1)
+                Expires = DateTime.Now.AddDays(1)
             };
 
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();

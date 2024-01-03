@@ -29,29 +29,22 @@ public class PasswordController : ControllerBase
 
 
     [HttpGet("GetPassword")]
-    public IEnumerable<Passwords> GetPasswords()
+    public IActionResult GetPasswords()
     {
-        string? accessToken = HttpContext.Request.Headers["Authorization"];
-        if (accessToken != null && accessToken.StartsWith("Bearer "))
+        try
         {
-            accessToken = accessToken.Substring("Bearer ".Length);
+            getUserId();
         }
-        accessToken = accessToken?.Trim();
-        int userId = 0;
-
-        string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
-        using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        catch (Exception ex)
         {
-            conn.Open();
-            SqlCommand command = new SqlCommand(sql0, conn);
-            object result = command.ExecuteScalar();
-            if (result != null)
-            {
-                userId = Convert.ToInt32(result);
-            }
-            conn.Close();
+            return StatusCode(401, ex.Message);
         }
+        int userId = getUserId();
 
+        if (userId == 0)
+        {
+            return BadRequest("Неверный или отсутствующий идентификатор пользователя");
+        }
 
         string sql = @"SELECT * FROM dbo.[Passwords] WHERE UserId =" + userId;
         IEnumerable<Passwords> passwords = _dapper.LoadData<Passwords>(sql);
@@ -65,53 +58,70 @@ public class PasswordController : ControllerBase
             password.additionalFields = additionalFields.ToList();
             resultPasswords.Add(password);
         }
-        return resultPasswords;
 
+        if (resultPasswords == null || !resultPasswords.Any())
+        {
+            return NotFound("Пароли для указанного идентификатора пользователя не найдены");
+        }
 
-
-
+        return Ok(resultPasswords);
     }
 
+
+
+
+
+
     [HttpPost("AddPassword")]
-    public IActionResult AddPassword([FromBody] Passwords userInput)
+    public IActionResult AddPassword([FromBody] PasswordDto userInput)
     {
+        try
+        {
+            getUserId();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(401, ex.Message);
+        }
         if (userInput == null || userInput.additionalFields == null)
         {
             return BadRequest("Invalid input data");
         }
-        int userId = getUserId();
 
+        int userId = getUserId();
 
         if (userId == 0)
         {
             return BadRequest("Invalid or missing UserId");
         }
 
-        string passwordSql = @" INSERT INTO dbo.Passwords ([UserId], [organization], [title])
-        VALUES
-        ('" + userId +
-          "', '" + userInput.organization +
-          "', '" + userInput.title + "');";
+        string passwordSql = @"INSERT INTO dbo.Passwords ([UserId], [organization], [title])
+                        VALUES (@UserId, @Organization, @Title);";
 
-        if (!_dapper.ExecuteSQL(passwordSql))
+        var passwordParameters = new
+        {
+            UserId = userId,
+            userInput.organization,
+            userInput.title
+        };
+
+        if (!_dapper.ExecuteSQL(passwordSql, passwordParameters))
         {
             throw new Exception("Failed to add Passwords");
         }
-        string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
 
+        string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
         int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
 
         foreach (var additionalField in userInput.additionalFields)
         {
-            additionalField.passwordId = insertedPasswordId; // Используем полученный ID из таблицы Passwords
-
             string additionalFieldSql = @"
-        INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
-        VALUES (@passwordId, @title, @value)";
+            INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
+            VALUES (@passwordId, @title, @value)";
 
             var fieldParameters = new
             {
-                passwordId = additionalField.passwordId,
+                passwordId = insertedPasswordId,
                 title = additionalField.title_,
                 value = additionalField.value
             };
@@ -123,56 +133,68 @@ public class PasswordController : ControllerBase
         }
 
         return Ok();
-
     }
+
     [HttpPut("UpdatePassword/{id}")]
-    public IActionResult UpdatePassword([FromBody] Passwords userInput, int id)
+    public IActionResult UpdatePassword(int id, [FromBody] PasswordDto userInput)
     {
-
-
-
-        // Проверка наличия UserId и входных данных
+        try
+        {
+            getUserId();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(401, ex.Message);
+        }
         if (id == 0 || userInput == null)
         {
             return BadRequest("Invalid input data or user information");
         }
 
-        // Обновление информации в таблице Passwords
-        string updatePasswordQuery = @"
-        UPDATE dbo.Passwords 
-        SET organization = @organization, title = @title 
-        WHERE id = @id";
-
-        using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        try
         {
-            conn.Open();
-            SqlCommand command = new SqlCommand(updatePasswordQuery, conn);
-            command.Parameters.AddWithValue("@organization", userInput.organization ?? "");
-            command.Parameters.AddWithValue("@title", userInput.title ?? "");
-            command.Parameters.AddWithValue("@id", id);
+            string updatePasswordQuery = @"
+            UPDATE dbo.Passwords 
+            SET organization = @organization, title = @title 
+            WHERE id = @id";
 
-            int rowsAffected = command.ExecuteNonQuery();
-
-            if (rowsAffected < 1)
+            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
-                Console.WriteLine("Failed to update Passwords");
-                return StatusCode(500, "Failed to update Passwords");
-            }
+                conn.Open();
+                SqlCommand command = new SqlCommand(updatePasswordQuery, conn);
+                command.Parameters.AddWithValue("@organization", userInput.organization ?? "");
+                command.Parameters.AddWithValue("@title", userInput.title ?? "");
+                command.Parameters.AddWithValue("@id", id);
+                int rowsAffected = command.ExecuteNonQuery();
 
-            Console.WriteLine("Passwords updated successfully");
-            conn.Close();
+                if (rowsAffected < 1)
+                {
+                    Console.WriteLine("Failed to update Passwords. No rows were affected.");
+                    return StatusCode(500, "Failed to update Passwords");
+                }
+
+                Console.WriteLine("Passwords updated successfully");
+                conn.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Exception during password update: " + ex.Message);
+            return StatusCode(500, "Exception during password update: " + ex.Message);
         }
 
+
         string deleteAdditionalFieldQuery = @"
-                DELETE FROM dbo.AdditionalFields 
-                WHERE passwordId =" + id.ToString();
+        DELETE FROM dbo.AdditionalFields 
+        WHERE passwordId = @id";
 
         using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
         {
             conn.Open();
-            SqlCommand command = new SqlCommand(deleteAdditionalFieldQuery, conn);
+            SqlCommand deleteCommand = new SqlCommand(deleteAdditionalFieldQuery, conn);
+            deleteCommand.Parameters.AddWithValue("@id", id);
 
-            int deletedRows = command.ExecuteNonQuery();
+            int deletedRows = deleteCommand.ExecuteNonQuery();
 
             if (deletedRows < 0)
             {
@@ -183,52 +205,36 @@ public class PasswordController : ControllerBase
             Console.WriteLine("All AdditionalField entries deleted successfully");
             conn.Close();
         }
-        string getPasswordIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
 
-        int currentPasswordId = 0; // Инициализируем текущий passwordId
-
-        using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
-        {
-            conn.Open();
-            SqlCommand getPasswordIdCommand = new SqlCommand(getPasswordIdQuery, conn);
-
-            object result = getPasswordIdCommand.ExecuteScalar();
-
-            if (result != null && int.TryParse(result.ToString(), out int retrievedPasswordId))
-            {
-                currentPasswordId = retrievedPasswordId;
-            }
-            else
-            {
-                // Обработка ошибки, если не удалось получить текущий passwordId
-            }
-
-            conn.Close();
-        }
-
-        // Добавление новых данных в таблицу AdditionalFields с использованием полученного passwordId
+        // Добавление новых данных в таблицу AdditionalFields с использованием текущего id
         foreach (var additionalField in userInput.additionalFields)
         {
             string insertAdditionalFieldQuery = @"
-        INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
-        VALUES (@passwordId, @title, @value)";
+            INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
+            VALUES (@passwordId, @title, @value)";
 
-            var fieldParameters = new
+            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
-                passwordId = currentPasswordId, // Используем текущий passwordId
-                title = additionalField.title_,
-                value = additionalField.value
-            };
+                conn.Open();
+                SqlCommand insertCommand = new SqlCommand(insertAdditionalFieldQuery, conn);
+                insertCommand.Parameters.AddWithValue("@passwordId", id);
+                insertCommand.Parameters.AddWithValue("@title", additionalField.title_ ?? "");
+                insertCommand.Parameters.AddWithValue("@value", additionalField.value ?? "");
 
-            // Выполнение запроса на добавление данных
-            if (!_dapper.ExecuteSQL(insertAdditionalFieldQuery, fieldParameters))
-            {
-                throw new Exception("Failed to add AdditionalField");
+                int insertedRows = insertCommand.ExecuteNonQuery();
+
+                if (insertedRows < 1)
+                {
+                    Console.WriteLine("Failed to add AdditionalField");
+                    return StatusCode(500, "Failed to add AdditionalField");
+                }
+
+                Console.WriteLine("AdditionalField added successfully");
+                conn.Close();
             }
         }
 
         return Ok();
-
     }
 
 
@@ -236,6 +242,14 @@ public class PasswordController : ControllerBase
     [HttpDelete("DeletePassword/{id}")]
     public IActionResult DeletePassword(int id)
     {
+        try
+        {
+            getUserId();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(401, ex.Message);
+        }
         try
         {
             string sqlPassword = @"DELETE from dbo.Passwords WHERE id= " + id.ToString();

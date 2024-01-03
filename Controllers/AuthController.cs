@@ -29,8 +29,8 @@ namespace apitest
         }
         [AllowAnonymous]
         [HttpPost("Register")]
-        public IActionResult Register(UserForRegistrationDto userForRegistration)
-        {
+       public IActionResult Register(UserForRegistrationDto userForRegistration)
+{
 
             string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = '" + userForRegistration.Email + "'";
             IEnumerable<string> existingUsers = _dapper.LoadData<string>(sqlCheckUserExists);

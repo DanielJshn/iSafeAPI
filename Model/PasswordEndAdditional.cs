@@ -2,7 +2,7 @@ namespace apitest
 {
     public class UserInputModel
     {
-        public Passwords? PasswordsDto { get; set; }
-        public List<AdditionalField>? AdditionalFields { get; set; }
+        public PasswordDto? PasswordsDto { get; set; }
+        public List<AdditionalFieldDto>? AdditionalFields { get; set; }
     }
 }

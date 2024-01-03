@@ -5,6 +5,7 @@ using Dapper;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace apitest
 {
@@ -12,10 +13,15 @@ namespace apitest
     public class AuthHelp
     {
         private readonly IConfiguration _config;
+        
         public AuthHelp(IConfiguration config)
         {
             _config = config;
+          
         }
+        
+
+        
 
         public byte[] GetPasswordHash(string password, byte[] passwordSalt)
         {
@@ -48,12 +54,14 @@ namespace apitest
             {
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = credentials,
-                Expires = DateTime.Now.AddDays(1)
+                Expires = DateTime.Now.AddMinutes(1)
             };
 
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
 
             SecurityToken token = handler.CreateToken(descriptor);
+
+
 
             return handler.WriteToken(token);
         }
@@ -74,7 +82,7 @@ namespace apitest
 
             if (userEmail == null)
             {
-                // Обработка случая, когда адрес электронной почты не найден
+
                 throw new Exception("Адрес электронной почты пользователя не найден.");
             }
 
@@ -129,24 +137,34 @@ namespace apitest
 
                 conn.Close();
             }
-
+            Console.WriteLine(userId);
             return userId;
         }
-        public void UpdateTokenValueInDatabase(string oldToken, string newToken)
+        public bool UpdateTokenValueInDatabase(int userId, string newToken)
         {
-            string sqlUpdate = "UPDATE Tokens SET TokenValue = @NewToken WHERE TokenValue = @OldToken";
-
-            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+            try
             {
-                conn.Open();
+                string? connectionString = _config.GetConnectionString("DefaultConnection");
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
 
-                SqlCommand command = new SqlCommand(sqlUpdate, conn);
-                command.Parameters.AddWithValue("@NewToken", newToken);
-                command.Parameters.AddWithValue("@OldToken", oldToken);
+                    string sqlUpdate = "UPDATE Tokens SET TokenValue = @NewToken WHERE UserId = @UserId";
+                    SqlCommand updateCommand = new SqlCommand(sqlUpdate, conn);
+                    updateCommand.Parameters.AddWithValue("@NewToken", newToken);
+                    updateCommand.Parameters.AddWithValue("@UserId", userId);
 
-                int rowsAffected = command.ExecuteNonQuery();
+                    int rowsAffected = updateCommand.ExecuteNonQuery();
 
-                conn.Close();
+                    conn.Close();
+
+                    return rowsAffected > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating token in database: {ex.Message}");
+                return false;
             }
         }
 
@@ -155,3 +173,9 @@ namespace apitest
 
     }
 }
+
+
+
+
+
+

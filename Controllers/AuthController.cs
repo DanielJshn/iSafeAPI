@@ -5,6 +5,7 @@ using apitest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace apitest
 {
@@ -16,12 +17,14 @@ namespace apitest
         private readonly Datadapper _dapper;
 
         private readonly AuthHelp _authHelp;
+        private readonly IMemoryCache? _cache;
 
         public AuthController(IConfiguration config)
         {
             _dapper = new Datadapper(config);
 
             _authHelp = new AuthHelp(config);
+
 
         }
         [AllowAnonymous]
@@ -61,7 +64,7 @@ namespace apitest
         new SqlParameter("@PasswordSalt", SqlDbType.VarBinary) { Value = passwordSalt },
         new SqlParameter("@TokenValue", SqlDbType.NVarChar) { Value = token }
     };
-
+            _cache?.Remove("Key");
             if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
             {
                 return Ok(new { Token = token });
@@ -102,7 +105,7 @@ namespace apitest
             {
                 return StatusCode(401, "Incorrect password!");
             }
-
+            _cache?.Remove("Key");
             // Если учетные данные верны, возвращаем токен из базы данных
             return Ok(new { Token = token.TokenValue });
         }
@@ -127,12 +130,21 @@ namespace apitest
 
             string newToken = _authHelp.GenerateNewToken(userId);
 
-            // Update token in the database if needed
-            _authHelp.UpdateTokenValueInDatabase(refreshToken, newToken);
+            bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
 
+            if (!tokenUpdated)
+            {
+                return StatusCode(500, "Failed to update token in the database");
+            }
+
+            _cache?.Remove("Key");
             return Ok(new { Token = newToken });
         }
+
+
+
     }
 }
+
 
 

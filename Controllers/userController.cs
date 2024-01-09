@@ -16,7 +16,7 @@ namespace apitest;
 public class UserController : ControllerBase
 {
     Datadapper _dapper;
-    
+
 
     IConfiguration _config;
 
@@ -24,7 +24,7 @@ public class UserController : ControllerBase
     {
         _dapper = new Datadapper(config);
         _config = config;
-       
+
     }
 
     [HttpGet("TestConnection")]
@@ -37,9 +37,12 @@ public class UserController : ControllerBase
     [HttpGet("GetUserData/{userId}")]
     public IActionResult GetUserData(int userId)
     {
-        try {
+        try
+        {
             getUserId();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             return StatusCode(401, ex.Message);
         }
         string sql = @"SELECT * FROM dbo.UserData where userId =" + userId.ToString();
@@ -53,13 +56,16 @@ public class UserController : ControllerBase
     [HttpPost("AddUserData")]
     public IActionResult AddUSerData(UserData userData)
     {
-         try {
+        try
+        {
             getUserId();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             return StatusCode(401, ex.Message);
         }
-         int userId = getUserId();
-         userData.UserId = userId;
+        int userId = getUserId();
+        userData.UserId = userId;
         string sql = @"INSERT INTO dbo.UserData(
         UserId,
         Name,
@@ -68,8 +74,8 @@ public class UserController : ControllerBase
             '" + userId +
         "','" + userData.Name +
             "', '" + userData.UserSecret + "')";
-        
-        
+
+
 
         if (!_dapper.ExecuteSQL(sql))
         {
@@ -81,12 +87,15 @@ public class UserController : ControllerBase
     [HttpDelete("DeleteUserData/{userId}")]
     public IActionResult DeleteUserData(int userId)
     {
-         try {
+        try
+        {
             getUserId();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             return StatusCode(401, ex.Message);
         }
-        
+
         string sql = "DELETE FROM dbo.UserData WHERE UserId = @UserId";
         var parameters = new { UserId = userId };
 

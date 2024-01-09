@@ -32,6 +32,9 @@ CorsBuilder.WithOrigins("https://myProduct.com")
 });
 
 
+
+
+
  string? TokenKeyString = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

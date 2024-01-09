@@ -6,13 +6,13 @@ namespace apitest
     {
         public int passwordId { get; set; }
         public int id { get; set; }
-        public string title_ { get; set; }
+        public string title { get; set; }
         public string value { get; set; }
 
         public AdditionalField()
         {
 
-            title_ ??= "";
+            title ??= "";
             value ??= "";
         }
     }

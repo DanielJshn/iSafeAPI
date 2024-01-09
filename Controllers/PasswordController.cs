@@ -95,12 +95,13 @@ public class PasswordController : ControllerBase
             return BadRequest("Invalid or missing UserId");
         }
 
-        string passwordSql = @"INSERT INTO dbo.Passwords ([UserId], [organization], [title])
-                        VALUES (@UserId, @Organization, @Title);";
+        string passwordSql = @"INSERT INTO dbo.Passwords ([UserId], [password], [organization], [title])
+                        VALUES (@UserId, @Password, @Organization, @Title);";
 
         var passwordParameters = new
         {
             UserId = userId,
+            userInput.password,
             userInput.organization,
             userInput.title
         };
@@ -112,17 +113,16 @@ public class PasswordController : ControllerBase
 
         string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
         int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
-
         foreach (var additionalField in userInput.additionalFields)
         {
             string additionalFieldSql = @"
-            INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
-            VALUES (@passwordId, @title, @value)";
+        INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
+        VALUES (@passwordId, @title, @value)";
 
             var fieldParameters = new
             {
                 passwordId = insertedPasswordId,
-                title = additionalField.title_,
+                title = additionalField.title,
                 value = additionalField.value
             };
 
@@ -132,8 +132,31 @@ public class PasswordController : ControllerBase
             }
         }
 
-        return Ok();
+        // Проверяем, если поля title и value пусты, заменяем их на пустую строку
+        foreach (var additionalField in userInput.additionalFields)
+        {
+            if (string.IsNullOrEmpty(additionalField.title) && string.IsNullOrEmpty(additionalField.value))
+            {
+                additionalField.title = ""; // Заменяем пустое поле title на пустую строку
+                additionalField.value = ""; // Заменяем пустое поле value на пустую строку
+            }
+        }
+
+        // Создаем новый объект для возврата, убирая пустые additionalFields
+        var result = new PasswordDto
+        {
+
+            password = userInput.password,
+            organization = userInput.organization,
+            title = userInput.title,
+            additionalFields = userInput.additionalFields
+                .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
+                .ToList()
+        };
+
+        return Ok(result);
     }
+
 
     [HttpPut("UpdatePassword/{id}")]
     public IActionResult UpdatePassword(int id, [FromBody] PasswordDto userInput)
@@ -155,13 +178,14 @@ public class PasswordController : ControllerBase
         {
             string updatePasswordQuery = @"
             UPDATE dbo.Passwords 
-            SET organization = @organization, title = @title 
+            SET password = @password, organization =  @organization, title = @title 
             WHERE id = @id";
 
             using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
                 conn.Open();
                 SqlCommand command = new SqlCommand(updatePasswordQuery, conn);
+                command.Parameters.AddWithValue("@password", userInput.password ?? "");
                 command.Parameters.AddWithValue("@organization", userInput.organization ?? "");
                 command.Parameters.AddWithValue("@title", userInput.title ?? "");
                 command.Parameters.AddWithValue("@id", id);
@@ -210,7 +234,7 @@ public class PasswordController : ControllerBase
         foreach (var additionalField in userInput.additionalFields)
         {
             string insertAdditionalFieldQuery = @"
-            INSERT INTO dbo.AdditionalFields (passwordId, title_, [value])  
+            INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
             VALUES (@passwordId, @title, @value)";
 
             using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
@@ -218,7 +242,7 @@ public class PasswordController : ControllerBase
                 conn.Open();
                 SqlCommand insertCommand = new SqlCommand(insertAdditionalFieldQuery, conn);
                 insertCommand.Parameters.AddWithValue("@passwordId", id);
-                insertCommand.Parameters.AddWithValue("@title", additionalField.title_ ?? "");
+                insertCommand.Parameters.AddWithValue("@title", additionalField.title ?? "");
                 insertCommand.Parameters.AddWithValue("@value", additionalField.value ?? "");
 
                 int insertedRows = insertCommand.ExecuteNonQuery();
@@ -252,20 +276,26 @@ public class PasswordController : ControllerBase
         }
         try
         {
+            string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = " + id.ToString();
+            var count = _dapper.LoadData<int>(countQuery).FirstOrDefault();
+
+            if (count > 0)
+            {
+                string sqlAdditional = @"DELETE from dbo.AdditionalFields WHERE passwordId= " + id.ToString();
+
+                if (!_dapper.ExecuteSQL(sqlAdditional))
+                {
+                    _logger.LogError($"Failed to delete user additional fields for ID: {id}");
+                    return StatusCode(500, "Failed to delete user additional fields");
+                }
+            }
+
             string sqlPassword = @"DELETE from dbo.Passwords WHERE id= " + id.ToString();
 
             if (!_dapper.ExecuteSQL(sqlPassword))
             {
                 _logger.LogError($"Failed to delete user password for ID: {id}");
                 return StatusCode(500, "Failed to delete user password");
-            }
-
-            string sqlAdditional = @"DELETE from dbo.AdditionalFields WHERE passwordId= " + id.ToString();
-
-            if (!_dapper.ExecuteSQL(sqlAdditional))
-            {
-                _logger.LogError($"Failed to delete user additional fields for ID: {id}");
-                return StatusCode(500, "Failed to delete user additional fields");
             }
 
             _logger.LogInformation($"User with ID {id} successfully deleted");
@@ -278,6 +308,7 @@ public class PasswordController : ControllerBase
             return StatusCode(500, "An error occurred while deleting the user");
         }
     }
+
     private int getUserId()
     {
         string? accessToken = HttpContext.Request.Headers["Authorization"];

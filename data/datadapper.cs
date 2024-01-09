@@ -43,7 +43,6 @@ namespace api.Controllers
         {
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             return dbConnection.Execute(sql);
-
         }
 
         public bool ExecuteSqlWithParameters(string sql, List<SqlParameter> parameters)

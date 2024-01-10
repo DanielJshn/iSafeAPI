@@ -64,74 +64,19 @@ public class PasswordController : ControllerBase
         {
             return BadRequest("Invalid input data");
         }
+         int userId = getUserId();
+         PasswordDto CreatedPassword;
 
-        int userId = getUserId();
-
-        if (userId == 0)
+          try
         {
-            return BadRequest("Invalid or missing UserId");
+            CreatedPassword = passwordRepository.PostPassword(userId, userInput);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
         }
 
-        string passwordSql = @"INSERT INTO dbo.Passwords ([UserId], [password], [organization], [title])
-                        VALUES (@UserId, @Password, @Organization, @Title);";
-
-        var passwordParameters = new
-        {
-            UserId = userId,
-            userInput.password,
-            userInput.organization,
-            userInput.title
-        };
-
-        if (!_dapper.ExecuteSQL(passwordSql, passwordParameters))
-        {
-            throw new Exception("Failed to add Passwords");
-        }
-
-        string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
-        int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
-        foreach (var additionalField in userInput.additionalFields)
-        {
-            string additionalFieldSql = @"
-        INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
-        VALUES (@passwordId, @title, @value)";
-
-            var fieldParameters = new
-            {
-                passwordId = insertedPasswordId,
-                title = additionalField.title,
-                value = additionalField.value
-            };
-
-            if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
-            {
-                throw new Exception("Failed to add AdditionalField");
-            }
-        }
-
-        // Проверяем, если поля title и value пусты, заменяем их на пустую строку
-        foreach (var additionalField in userInput.additionalFields)
-        {
-            if (string.IsNullOrEmpty(additionalField.title) && string.IsNullOrEmpty(additionalField.value))
-            {
-                additionalField.title = ""; // Заменяем пустое поле title на пустую строку
-                additionalField.value = ""; // Заменяем пустое поле value на пустую строку
-            }
-        }
-
-        // Создаем новый объект для возврата, убирая пустые additionalFields
-        var result = new PasswordDto
-        {
-
-            password = userInput.password,
-            organization = userInput.organization,
-            title = userInput.title,
-            additionalFields = userInput.additionalFields
-                .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
-                .ToList()
-        };
-
-        return Ok(result);
+        return Ok(CreatedPassword);
     }
 
 
@@ -146,7 +91,7 @@ public class PasswordController : ControllerBase
 
         try
         {
-            passwordRepository.updatePassword(id, userInput);
+            passwordRepository.UpdatePassword(id, userInput);
         }
         catch (Exception ex)
         {
@@ -164,36 +109,13 @@ public class PasswordController : ControllerBase
         checkAuthToken();
         try
         {
-            string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = " + id.ToString();
-            var count = _dapper.LoadData<int>(countQuery).FirstOrDefault();
-
-            if (count > 0)
-            {
-                string sqlAdditional = @"DELETE from dbo.AdditionalFields WHERE passwordId= " + id.ToString();
-
-                if (!_dapper.ExecuteSQL(sqlAdditional))
-                {
-                    _logger.LogError($"Failed to delete user additional fields for ID: {id}");
-                    return StatusCode(500, "Failed to delete user additional fields");
-                }
-            }
-
-            string sqlPassword = @"DELETE from dbo.Passwords WHERE id= " + id.ToString();
-
-            if (!_dapper.ExecuteSQL(sqlPassword))
-            {
-                _logger.LogError($"Failed to delete user password for ID: {id}");
-                return StatusCode(500, "Failed to delete user password");
-            }
-
-            _logger.LogInformation($"User with ID {id} successfully deleted");
+            passwordRepository.DeletePassword(id);
+           
             return Ok("User successfully deleted");
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
-            // Logging detailed error information
-            _logger.LogError($"Error while deleting user with ID {id}: {ex.Message}");
-            return StatusCode(500, "An error occurred while deleting the user");
+            return BadRequest(ex.Message);
         }
     }
 
@@ -208,7 +130,7 @@ public class PasswordController : ControllerBase
         {
             return StatusCode(401, ex.Message);
         }
-        return null;
+        return null ;
     }
 
     private int getUserId()

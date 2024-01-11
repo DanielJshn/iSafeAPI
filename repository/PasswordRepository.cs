@@ -52,97 +52,122 @@ namespace apitest
 
         public List<Passwords> getAllPasswords(int userId)
         {
-            string sql = @"SELECT * FROM dbo.[Passwords] WHERE UserId =" + userId;
-            IEnumerable<Passwords> passwords = _dapper.LoadData<Passwords>(sql);
+            string sql = @"SELECT * FROM dbo.[Passwords] WHERE UserId = @userId";
+            IEnumerable<Passwords> passwords = _dapper.LoadDatatwoParam<Passwords>(sql, new { userId });
 
             List<Passwords> resultPasswords = new List<Passwords>();
 
             foreach (var password in passwords)
             {
-                string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId =" + password.id;
-                IEnumerable<AdditionalField> additionalFields = _dapper.LoadData<AdditionalField>(sql2);
+                string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId = @passwordId";
+                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.id });
                 password.additionalFields = additionalFields.ToList();
                 resultPasswords.Add(password);
             }
+
             return resultPasswords;
         }
 
+
         public void UpdatePassword(int id, PasswordDto userInput)
         {
-            try
-            {
-                string updatePasswordQuery = @"
+            string updatePasswordQuery = @"
                         UPDATE dbo.Passwords 
                         SET password = @password, organization =  @organization, title = @title 
                         WHERE id = @id";
 
-                using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
-                {
-                    conn.Open();
-                    SqlCommand command = new SqlCommand(updatePasswordQuery, conn);
-                    command.Parameters.AddWithValue("@password", userInput.password ?? "");
-                    command.Parameters.AddWithValue("@organization", userInput.organization ?? "");
-                    command.Parameters.AddWithValue("@title", userInput.title ?? "");
-                    command.Parameters.AddWithValue("@id", id);
-                    int rowsAffected = command.ExecuteNonQuery();
-
-                    if (rowsAffected < 1)
-                    {
-                        throw new Exception("Failed to update Passwords");
-                    }
-                    conn.Close();
-                }
-            }
-            catch
+            var passwordParameters = new
             {
-                throw new Exception("Exception during password update");
-            }
+                id = id,
+                userInput.password,
+                userInput.organization,
+                userInput.title
+            };
 
-
-            string deleteAdditionalFieldQuery = @"
-                    DELETE FROM dbo.AdditionalFields 
-                    WHERE passwordId = @id";
-
-            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+            if (!_dapper.ExecuteSQL(updatePasswordQuery, passwordParameters))
             {
-                conn.Open();
-                SqlCommand deleteCommand = new SqlCommand(deleteAdditionalFieldQuery, conn);
-                deleteCommand.Parameters.AddWithValue("@id", id);
-
-                int deletedRows = deleteCommand.ExecuteNonQuery();
-
-                if (deletedRows < 0)
-                {
-                    throw new Exception("Failed to delete existing AdditionalField entries");
-                }
-
-                conn.Close();
+                throw new Exception("Failed to update Passwords");
             }
+            
 
+
+
+
+            string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
+
+            var count = _dapper.LoadDatatwoParam<int>(countQuery, new { id }).FirstOrDefault();
+
+            if (count > 0)
+            {
+                string sqlAdditional = "DELETE FROM dbo.AdditionalFields WHERE passwordId = @id";
+
+                _dapper.ExecuteSQL(sqlAdditional, new { id });
+            }
+            string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
+            int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
             foreach (var additionalField in userInput.additionalFields)
             {
-                string insertAdditionalFieldQuery = @"
-                        INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
-                        VALUES (@passwordId, @title, @value)";
+                string additionalFieldSql = @"
+                INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
+                VALUES (@passwordId, @title, @value)";
 
-                using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                var fieldParameters = new
                 {
-                    conn.Open();
-                    SqlCommand insertCommand = new SqlCommand(insertAdditionalFieldQuery, conn);
-                    insertCommand.Parameters.AddWithValue("@passwordId", id);
-                    insertCommand.Parameters.AddWithValue("@title", additionalField.title ?? "");
-                    insertCommand.Parameters.AddWithValue("@value", additionalField.value ?? "");
+                    passwordId = insertedPasswordId,
+                    title = additionalField.title,
+                    value = additionalField.value
+                };
 
-                    int insertedRows = insertCommand.ExecuteNonQuery();
-
-                    if (insertedRows < 1)
-                    {
-                        throw new Exception("Failed to add AdditionalField");
-                    }
-
-                    conn.Close();
+                if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
+                {
+                    throw new Exception("Failed to add AdditionalField");
                 }
             }
+
+
+
+            // string deleteAdditionalFieldQuery = @"
+            //         DELETE FROM dbo.AdditionalFields 
+            //         WHERE passwordId = @id";
+            // List<AdditionalField> additionalField1 = new List<AdditionalField>();
+
+            // if (additionalField1 != null && additionalField1.Count > 0)
+            // {
+            //     foreach (var additionalField in additionalField1)
+            //     {
+            //         var additionalFieldparameter = new
+            //         {
+            //             id = id,
+            //             passwordId = additionalField.passwordId
+            //         };
+
+            //         if (!_dapper.ExecuteSQL(deleteAdditionalFieldQuery, additionalFieldparameter))
+            //         {
+            //             throw new Exception("Failed to Delete add");
+            //         }
+            //     }
+            // }
+            // string getIdQuery = "SELECT TOP 1 id FROM dbo.Passwords ORDER BY id DESC";
+            // int insertedPasswordId = _dapper.LoadData<int>(getIdQuery).FirstOrDefault();
+            // foreach (var additionalField in userInput.additionalFields)
+            // {
+            //     string additionalFieldSql = @"
+            //     INSERT INTO dbo.AdditionalFields (passwordId, title, [value])  
+            //     VALUES (@passwordId, @title, @value)";
+
+            //     var fieldParameters = new
+            //     {
+            //         passwordId = insertedPasswordId,
+            //         title = additionalField.title,
+            //         value = additionalField.value
+            //     };
+
+            //     if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
+            //     {
+            //         throw new Exception("Failed to add AdditionalField");
+            //     }
+            // }
+
         }
 
 
@@ -214,23 +239,24 @@ namespace apitest
         }
         public void DeletePassword(int id)
         {
-             string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = " + id.ToString();
-            var count = _dapper.LoadData<int>(countQuery).FirstOrDefault();
+            string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
+
+            var count = _dapper.LoadDatatwoParam<int>(countQuery, new { id }).FirstOrDefault();
 
             if (count > 0)
             {
-                string sqlAdditional = @"DELETE from dbo.AdditionalFields WHERE passwordId= " + id.ToString();
+                string sqlAdditional = "DELETE FROM dbo.AdditionalFields WHERE passwordId = @id";
 
-                 _dapper.ExecuteSQL(sqlAdditional);
-               
-            };
+                _dapper.ExecuteSQL(sqlAdditional, new { id });
+            }
 
-            string sqlPassword = @"DELETE from dbo.Passwords WHERE id= " + id.ToString();
 
-            if (!_dapper.ExecuteSQL(sqlPassword))
+
+            string sqlPassword = "DELETE FROM dbo.Passwords WHERE id = @id";
+
+            if (!_dapper.ExecuteSQL(sqlPassword, new { id }))
             {
-              
-                 throw new Exception ("Failed to delete Passwords");
+                throw new Exception("Failed to delete Passwords");
             }
         }
 

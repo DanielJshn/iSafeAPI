@@ -11,15 +11,14 @@ public class PasswordController : ControllerBase
 {
     Datadapper _dapper;
     PasswordRepository passwordRepository;
-    private readonly ILogger<UserController> _logger;
+    
 
     IConfiguration _config;
 
-    public PasswordController(IConfiguration config, ILogger<UserController> logger)
+    public PasswordController(IConfiguration config)
     {
         _dapper = new Datadapper(config);
         _config = config;
-        _logger = logger;
         passwordRepository = new PasswordRepository(_dapper, HttpContext, _config);
     }
 
@@ -120,7 +119,7 @@ public class PasswordController : ControllerBase
     }
 
 
-    private ObjectResult checkAuthToken()
+    private ObjectResult? checkAuthToken()
     {
         try
         {

@@ -19,60 +19,72 @@ namespace apitest
         private readonly AuthHelp _authHelp;
         private readonly IMemoryCache? _cache;
 
+        AuthRepository authRepository;
+
         public AuthController(IConfiguration config)
         {
             _dapper = new Datadapper(config);
 
             _authHelp = new AuthHelp(config);
-
+            authRepository = new AuthRepository(_dapper, _authHelp);
 
         }
         [AllowAnonymous]
         [HttpPost("Register")]
-       public IActionResult Register(UserForRegistrationDto userForRegistration)
-{
-
-            string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = '" + userForRegistration.Email + "'";
-            IEnumerable<string> existingUsers = _dapper.LoadData<string>(sqlCheckUserExists);
-
-            if (existingUsers.Count() > 0)
+        public IActionResult Register(UserForRegistrationDto userForRegistration)
+        {
+            try
             {
-                throw new Exception("User with this email already exists!");
+                authRepository.CheckUser(userForRegistration);
+               string token= authRepository.RegistrEndInsert(userForRegistration);
+                return Ok(token);
             }
-
-            byte[] passwordSalt = new byte[128 / 8];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            catch (Exception ex)
             {
-                rng.GetNonZeroBytes(passwordSalt);
+                return BadRequest(ex.Message);
             }
+            
+            //  string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = '" + userForRegistration.Email + "'";
+            // IEnumerable<string> existingUsers = _dapper.LoadData<string>(sqlCheckUserExists);
 
-            byte[] passwordHash = _authHelp.GetPasswordHash(userForRegistration.Password, passwordSalt);
+            // if (existingUsers.Count() > 0)
+            // {
+            //     throw new Exception("User with this email already exists!");
+            // }
+
+            //         byte[] passwordSalt = new byte[128 / 8];
+            //         using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            //         {
+            //             rng.GetNonZeroBytes(passwordSalt);
+            //         }
+
+            //         byte[] passwordHash = _authHelp.GetPasswordHash(userForRegistration.Password, passwordSalt);
 
 
-            string token = _authHelp.CreateToken(userForRegistration.Email);
+            //         string token = _authHelp.CreateToken(userForRegistration.Email);
+
+            //         string sqlAddAuth = @"
+            //     INSERT INTO dbo.Tokens  ([Email], [PasswordHash], [PasswordSalt], [TokenValue]) 
+            //     VALUES (@Email, @PasswordHash, @PasswordSalt, @TokenValue)";
 
 
 
-            string sqlAddAuth = @"
-        INSERT INTO dbo.Tokens  ([Email], [PasswordHash], [PasswordSalt], [TokenValue]) 
-        VALUES (@Email, @PasswordHash, @PasswordSalt, @TokenValue)";
-
-            List<SqlParameter> sqlParameters = new List<SqlParameter>
-    {
-        new SqlParameter("@Email", SqlDbType.NVarChar) { Value = userForRegistration.Email },
-        new SqlParameter("@PasswordHash", SqlDbType.VarBinary) { Value = passwordHash },
-        new SqlParameter("@PasswordSalt", SqlDbType.VarBinary) { Value = passwordSalt },
-        new SqlParameter("@TokenValue", SqlDbType.NVarChar) { Value = token }
-    };
-            _cache?.Remove("Key");
-            if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
-            {
-                return Ok(new { Token = token });
-            }
-            else
-            {
-                throw new Exception("Failed to register user.");
-            }
+            //         List<SqlParameter> sqlParameters = new List<SqlParameter>
+            // {
+            //     new SqlParameter("@Email", SqlDbType.NVarChar) { Value = userForRegistration.Email },
+            //     new SqlParameter("@PasswordHash", SqlDbType.VarBinary) { Value = passwordHash },
+            //     new SqlParameter("@PasswordSalt", SqlDbType.VarBinary) { Value = passwordSalt },
+            //     new SqlParameter("@TokenValue", SqlDbType.NVarChar) { Value = token }
+            // };
+            //         _cache?.Remove("Key");
+            //         if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
+            //          {
+            //              return Ok(new { Token = token });
+            //          }
+            //         else
+            //         {
+            //             throw new Exception("Failed to register user.");
+            //         }
         }
 
         [AllowAnonymous]

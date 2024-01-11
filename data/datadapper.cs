@@ -18,6 +18,18 @@ namespace api.Controllers
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             return dbConnection.Query<T>(sql);
         }
+        public IEnumerable<T> LoadDatatwoParam<T>(string sql, object? parameters = null)
+        {
+            IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            if (parameters != null)
+            {
+                return dbConnection.Query<T>(sql, parameters);
+            }
+            else
+            {
+                return dbConnection.Query<T>(sql);
+            }
+        }
 
 
         public T LoadDataSingle<T>(string sql, object? parameter = null)

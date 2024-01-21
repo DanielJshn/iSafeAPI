@@ -1,3 +1,4 @@
+using System.Collections;
 using api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +10,11 @@ namespace apitest;
 [Route("[controller]")]
 public class PasswordController : ControllerBase
 {
-    Datadapper _dapper;
-    PasswordRepository passwordRepository;
-    
+    private readonly Datadapper _dapper;
+    private readonly PasswordRepository passwordRepository;
 
-    IConfiguration _config;
+
+    private readonly IConfiguration _config;
 
     public PasswordController(IConfiguration config)
     {
@@ -42,10 +43,7 @@ public class PasswordController : ControllerBase
 
         List<Passwords> resultPasswords = passwordRepository.getAllPasswords(userId);
 
-        if (resultPasswords == null || !resultPasswords.Any())
-        {
-            return NotFound("Пароли для указанного идентификатора пользователя не найдены");
-        }
+
 
         return Ok(resultPasswords);
     }
@@ -63,10 +61,10 @@ public class PasswordController : ControllerBase
         {
             return BadRequest("Invalid input data");
         }
-         int userId = getUserId();
-         PasswordDto CreatedPassword;
+        int userId = getUserId();
+        PasswordDto CreatedPassword;
 
-          try
+        try
         {
             CreatedPassword = passwordRepository.PostPassword(userId, userInput);
         }
@@ -109,14 +107,15 @@ public class PasswordController : ControllerBase
         try
         {
             passwordRepository.DeletePassword(id);
-           
+
             return Ok("User successfully deleted");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
     }
+
 
 
     private ObjectResult? checkAuthToken()
@@ -129,10 +128,10 @@ public class PasswordController : ControllerBase
         {
             return StatusCode(401, ex.Message);
         }
-        return null ;
+        return null;
     }
 
-    private int getUserId()
+    public int getUserId()
     {
         string? accessToken = HttpContext.Request.Headers["Authorization"];
         if (accessToken != null && accessToken.StartsWith("Bearer "))
@@ -157,6 +156,7 @@ public class PasswordController : ControllerBase
         }
         throw new Exception("Can't get user id");
     }
+
 
 
 }

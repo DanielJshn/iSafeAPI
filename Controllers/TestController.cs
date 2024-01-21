@@ -16,14 +16,14 @@ namespace apitest;
 public class TestController : ControllerBase
 {
     Datadapper _dapper;
- 
+
 
     IConfiguration? _config;
 
     public TestController(IConfiguration config)
     {
         _dapper = new Datadapper(config);
-        
+
     }
 
     [HttpGet("Connection")]
@@ -35,7 +35,7 @@ public class TestController : ControllerBase
     [HttpGet]
     public string Test()
     {
-        return "Application is up end runing oboboboboobobobo";
+        return "iSafe API v0.1";
     }
 
 

@@ -13,15 +13,15 @@ namespace apitest
     public class AuthHelp
     {
         private readonly IConfiguration _config;
-        
+
         public AuthHelp(IConfiguration config)
         {
             _config = config;
-          
-        }
-        
 
-        
+        }
+
+
+
 
         public byte[] GetPasswordHash(string password, byte[] passwordSalt)
         {
@@ -54,7 +54,7 @@ namespace apitest
             {
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = credentials,
-                Expires = DateTime.Now.AddDays(1)
+                Expires = DateTime.Now.AddMonths(1)
             };
 
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
@@ -100,7 +100,7 @@ namespace apitest
             {
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = credentials,
-                Expires = DateTime.Now.AddDays(1)
+                Expires = DateTime.Now.AddMonths(1)
             };
 
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
@@ -137,7 +137,7 @@ namespace apitest
 
                 conn.Close();
             }
-            Console.WriteLine(userId);
+
             return userId;
         }
         public bool UpdateTokenValueInDatabase(int userId, string newToken)
@@ -167,7 +167,6 @@ namespace apitest
                 return false;
             }
         }
-
 
 
 

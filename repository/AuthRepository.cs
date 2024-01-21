@@ -9,25 +9,31 @@ namespace apitest
 {
     class AuthRepository
     {
-        Datadapper _dapper;
+        private readonly Datadapper _dapper;
+        private readonly HttpContext _context;
+        private readonly AuthHelp _authHelp;
+     
+       
 
-        AuthHelp _authHelp;
-
-        public AuthRepository(Datadapper dapper, AuthHelp authHelp)
+        public AuthRepository(Datadapper dapper, AuthHelp authHelp, HttpContext context )
         {
+            _context = context;
             _dapper = dapper;
             _authHelp = authHelp;
+           
+            
         }
 
         public void CheckUser(UserForRegistrationDto userForRegistration)
         {
-            string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = '" + userForRegistration.Email + "'";
-            IEnumerable<string> existingUsers = _dapper.LoadData<string>(sqlCheckUserExists);
+            string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = @UserEmail";
+            IEnumerable<string> existingUsers = _dapper.LoadDatatwoParam<string>(sqlCheckUserExists, new { UserEmail = userForRegistration.Email });
 
-            if (existingUsers.Count() > 0)
+            if (existingUsers.Any())
             {
                 throw new Exception("User with this email already exists!");
             }
+
         }
 
 
@@ -62,7 +68,7 @@ namespace apitest
 
             if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
             {
-                 return  token ;
+                return token;
             }
             else
             {
@@ -70,5 +76,40 @@ namespace apitest
             }
 
         }
+
+        public string CheckEmail(UserForLoginDto userForLogin)
+        {
+            string sqlForToken = @"SELECT [UserId], [TokenValue] FROM dbo.Tokens WHERE Email = @UserEmail";
+
+            var token = _dapper.LoadDatatwoParam<Token>(sqlForToken, new { UserEmail = userForLogin.Email }).FirstOrDefault();
+
+            if (token == null)
+            {
+                throw new Exception("Incorrect Email!");
+            }
+            return token.TokenValue;
+
+        }
+        public void CheckPassword(UserForLoginDto userForLogin)
+        {
+            string sqlForHashAndSalt = @"SELECT [PasswordHash], [PasswordSalt] FROM dbo.Tokens WHERE Email = @UserEmail";
+
+            var userForConfirmation = _dapper.LoadDatatwoParam<UserForLoginConfirmationDto>(sqlForHashAndSalt, new { UserEmail = userForLogin.Email }).FirstOrDefault();
+
+            if (userForConfirmation == null)
+            {
+                throw new Exception("Incorrect Email!");
+            }
+            byte[] passwordHash = _authHelp.GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
+
+            if (!passwordHash.SequenceEqual(userForConfirmation.PasswordHash))
+            {
+                throw new Exception("Incorrect password!");
+            }
+
+
+        }
+
+
     }
 }

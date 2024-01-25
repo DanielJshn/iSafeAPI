@@ -130,7 +130,7 @@ public class PasswordController : ControllerBase
         }
         return null;
     }
-
+ [NonAction]
     public int getUserId()
     {
         string? accessToken = HttpContext.Request.Headers["Authorization"];

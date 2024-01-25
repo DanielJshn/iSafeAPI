@@ -136,7 +136,7 @@ namespace apitest
         {
             try
             {
-               getUserId();
+                getUserId();
             }
             catch (Exception ex)
             {
@@ -144,7 +144,7 @@ namespace apitest
             }
             return null;
         }
-
+     [NonAction]
         public int getUserId()
         {
             string? accessToken = HttpContext.Request.Headers["Authorization"];
@@ -170,6 +170,7 @@ namespace apitest
             }
             throw new Exception("Can't get user id");
         }
+
 
 
 

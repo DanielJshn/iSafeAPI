@@ -12,16 +12,15 @@ public class PasswordController : ControllerBase
 {
     private readonly Datadapper _dapper;
     private readonly PasswordRepository passwordRepository;
-
-
     private readonly IConfiguration _config;
 
     public PasswordController(IConfiguration config)
     {
         _dapper = new Datadapper(config);
         _config = config;
-        passwordRepository = new PasswordRepository(_dapper, HttpContext, _config);
+        passwordRepository = new PasswordRepository(_dapper);
     }
+
 
     [HttpGet("TestConnection")]
     public DateTime TestConnection()
@@ -35,22 +34,14 @@ public class PasswordController : ControllerBase
     {
         checkAuthToken();
         int userId = getUserId();
-
         if (userId == 0)
         {
             return BadRequest("Неверный или отсутствующий идентификатор пользователя");
         }
-
-        List<Passwords> resultPasswords = passwordRepository.getAllPasswords(userId);
-
-
+        List<Password> resultPasswords = passwordRepository.getAllPasswords(userId);
 
         return Ok(resultPasswords);
     }
-
-
-
-
 
 
     [HttpPost("AddPassword")]
@@ -63,7 +54,6 @@ public class PasswordController : ControllerBase
         }
         int userId = getUserId();
         PasswordDto CreatedPassword;
-
         try
         {
             CreatedPassword = passwordRepository.PostPassword(userId, userInput);
@@ -99,7 +89,6 @@ public class PasswordController : ControllerBase
     }
 
 
-
     [HttpDelete("DeletePassword/{id}")]
     public IActionResult DeletePassword(int id)
     {
@@ -107,15 +96,13 @@ public class PasswordController : ControllerBase
         try
         {
             passwordRepository.DeletePassword(id);
-
-            return Ok("User successfully deleted");
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
+        return Ok("User successfully deleted");
     }
-
 
 
     private ObjectResult? checkAuthToken()
@@ -130,7 +117,9 @@ public class PasswordController : ControllerBase
         }
         return null;
     }
- [NonAction]
+
+
+    [NonAction]
     public int getUserId()
     {
         string? accessToken = HttpContext.Request.Headers["Authorization"];

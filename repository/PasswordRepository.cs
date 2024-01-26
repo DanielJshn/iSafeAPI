@@ -9,14 +9,11 @@ namespace apitest
     public class PasswordRepository
     {
         private readonly Datadapper _dapper;
-        private readonly HttpContext _context;
-        private readonly IConfiguration _config;
 
-        public PasswordRepository(Datadapper datadapper, HttpContext context, IConfiguration config)
+
+        public PasswordRepository(Datadapper datadapper)
         {
             _dapper = datadapper;
-            _context = context;
-            _config = config;
         }
 
         public DateTime TestConnection()
@@ -25,21 +22,18 @@ namespace apitest
         }
 
 
-
-
-
-        public List<Passwords> getAllPasswords(int userId)
+        public List<Password> getAllPasswords(int userId)
         {
             string sql = @"SELECT * FROM dbo.[Passwords] WHERE UserId = @userId";
-            IEnumerable<Passwords> passwords = _dapper.LoadDatatwoParam<Passwords>(sql, new { userId });
+            IEnumerable<Password> passwords = _dapper.LoadDatatwoParam<Password>(sql, new { userId });
 
-            List<Passwords> resultPasswords = new List<Passwords>();
+            List<Password> resultPasswords = new List<Password>();
 
             foreach (var password in passwords)
             {
                 string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId = @passwordId";
-                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.Id });
-                password.AdditionalFields = additionalFields.ToList();
+                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.id });
+                password.additionalFields = additionalFields.ToList();
                 resultPasswords.Add(password);
             }
 

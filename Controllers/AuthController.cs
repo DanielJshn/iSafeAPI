@@ -19,9 +19,7 @@ namespace apitest
     public class AuthController : ControllerBase
     {
         private readonly Datadapper _dapper;
-
         private readonly AuthHelp _authHelp;
-
         PasswordRepository passwordRepository;
         private readonly IConfiguration _config;
         AuthRepository authRepository;
@@ -32,23 +30,25 @@ namespace apitest
             _authHelp = new AuthHelp(config);
             _config = config;
             authRepository = new AuthRepository(_dapper, _authHelp, HttpContext);
-            passwordRepository = new PasswordRepository(_dapper, HttpContext, _config);
-
+            passwordRepository = new PasswordRepository(_dapper);
         }
+
+
         [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
+            string token;
             try
             {
                 authRepository.CheckUser(userForRegistration);
-                string token = authRepository.RegistrEndInsert(userForRegistration);
-                return Ok(new { Token = token });
+                token = authRepository.RegistrEndInsert(userForRegistration);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+            return Ok(new { Token = token });
         }
 
 
@@ -56,59 +56,50 @@ namespace apitest
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
+            string newToken;
             try
             {
                 string token = authRepository.CheckEmail(userForLogin);
                 authRepository.CheckPassword(userForLogin);
                 int userId = _authHelp.GetUserIdFromToken(token);
-
                 if (userId == 0)
                 {
                     return BadRequest("Can not find this user");
                 }
-                string newToken = _authHelp.GenerateNewToken(userId);
+                newToken = _authHelp.GenerateNewToken(userId);
 
                 bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
-
-                return Ok(new { Token = newToken });
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
-
+            return Ok(new { Token = newToken });
         }
 
 
         [HttpGet("RefreshToken")]
         public IActionResult RefreshToken()
         {
-
             string? refreshToken = HttpContext.Request.Headers["Authorization"];
-
             if (string.IsNullOrEmpty(refreshToken) || !refreshToken.StartsWith("Bearer "))
             {
                 return BadRequest("Invalid or missing Bearer token in Authorization header");
             }
 
             refreshToken = refreshToken.Substring("Bearer ".Length);
-
             int userId = _authHelp.GetUserIdFromToken(refreshToken);
-
             if (userId == 0)
             {
                 return BadRequest("Invalid Refresh Token");
             }
 
             string newToken = _authHelp.GenerateNewToken(userId);
-
             bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
-
             if (!tokenUpdated)
             {
                 return StatusCode(500, "Failed to update token in the database");
             }
-
 
             return Ok(new { Token = newToken });
         }
@@ -123,12 +114,12 @@ namespace apitest
             {
                 passwordRepository.DeletePassword(userId);
                 passwordRepository.DeleteUser(userId);
-                return Ok("Account deleted");
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+            return Ok("Account deleted");
         }
 
 
@@ -144,7 +135,9 @@ namespace apitest
             }
             return null;
         }
-     [NonAction]
+
+
+        [NonAction]
         public int getUserId()
         {
             string? accessToken = HttpContext.Request.Headers["Authorization"];
@@ -170,10 +163,6 @@ namespace apitest
             }
             throw new Exception("Can't get user id");
         }
-
-
-
-
 
     }
 }

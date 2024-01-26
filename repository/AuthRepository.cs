@@ -12,16 +12,16 @@ namespace apitest
         private readonly Datadapper _dapper;
         private readonly HttpContext _context;
         private readonly AuthHelp _authHelp;
-     
-       
 
-        public AuthRepository(Datadapper dapper, AuthHelp authHelp, HttpContext context )
+
+
+        public AuthRepository(Datadapper dapper, AuthHelp authHelp, HttpContext context)
         {
             _context = context;
             _dapper = dapper;
             _authHelp = authHelp;
-           
-            
+
+
         }
 
         public void CheckUser(UserForRegistrationDto userForRegistration)
@@ -53,8 +53,8 @@ namespace apitest
             string token = _authHelp.CreateToken(userForRegistration.Email);
 
             string sqlAddAuth = @"
-        INSERT INTO dbo.Tokens  ([Email], [PasswordHash], [PasswordSalt], [TokenValue]) 
-        VALUES (@Email, @PasswordHash, @PasswordSalt, @TokenValue)";
+                INSERT INTO dbo.Tokens  ([Email], [PasswordHash], [PasswordSalt], [TokenValue]) 
+                VALUES (@Email, @PasswordHash, @PasswordSalt, @TokenValue)";
 
 
 

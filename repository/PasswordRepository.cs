@@ -25,7 +25,7 @@ namespace apitest
         }
 
 
-      
+
 
 
         public List<Passwords> getAllPasswords(int userId)
@@ -38,8 +38,8 @@ namespace apitest
             foreach (var password in passwords)
             {
                 string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId = @passwordId";
-                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.id });
-                password.additionalFields = additionalFields.ToList();
+                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.Id });
+                password.AdditionalFields = additionalFields.ToList();
                 resultPasswords.Add(password);
             }
 

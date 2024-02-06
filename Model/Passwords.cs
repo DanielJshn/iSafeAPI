@@ -7,10 +7,19 @@ namespace apitest;
 
 public class Password
 {
-    public int userId { get; set; }
-    public int id { get; set; }
+    public int? userId { get; set; }
+    public int? id { get; set; }
     public string password { get; set; }
     public string organization { get; set; }
     public string title { get; set; }
     public List<AdditionalField> additionalFields { get; set; }
+
+    public Password()
+    {
+        additionalFields = new List<AdditionalField>();
+        password = "";
+        organization = "";
+        title = "";
+    }
+
 }

@@ -5,6 +5,8 @@ This is a REST API for a password manager android app **iSafe**
 
 Here is a link to a postman collection with the API endpoints: [Postman collection](https://drive.google.com/file/d/1SwA90HSGaPAYAtFPrSSgw3JaY2MKbChJ/view?usp=sharing)
 
+The API and the database are deployed on Azure
+
 ## Technologies
 - **.Net** - framework for the web application
 - **Asp.Net MVC** - for the web API

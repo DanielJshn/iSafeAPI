@@ -33,13 +33,13 @@ namespace apitest
          return result;
       }
 
-      public List<Note> getAllPasswords(int userId)
+      public List<NoteResponse> getAllPasswords(int userId)
       {
 
          string sql = @"SELECT * FROM dbo.Note WHERE UserId = @userId";
-         IEnumerable<Note> passwords = _dapper.LoadDatatwoParam<Note>(sql, new { userId });
+         IEnumerable<NoteResponse> passwords = _dapper.LoadDatatwoParam<NoteResponse>(sql, new { userId });
 
-         List<Note> resultPasswords = passwords.ToList();
+         List<NoteResponse> resultPasswords = passwords.ToList();
 
          return resultPasswords;
       }

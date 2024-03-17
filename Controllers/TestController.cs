@@ -35,7 +35,7 @@ public class TestController : ControllerBase
     [HttpGet]
     public string Test()
     {
-        return "iSafe API v0.1";
+        return "iSafe API v2.1";
     }
 
 

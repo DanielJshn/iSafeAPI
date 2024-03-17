@@ -50,7 +50,7 @@ public class NoteController : ControllerBase
         {
             return BadRequest("Неверный или отсутствующий идентификатор пользователя");
         }
-        List<Note> notes = _noteRepository.getAllPasswords(userId);
+        List<NoteResponse> notes = _noteRepository.getAllPasswords(userId);
         return Ok(notes);
     }
 

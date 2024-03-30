@@ -12,14 +12,15 @@ namespace apitest
       }
       public NoteDto PostNote(int userId, NoteDto userInput)
       {
-         string noteSql = @"INSERT INTO dbo.Note (UserId , title , description)
-                                    VALUES (@UserId, @Title, @Description)";
+         string noteSql = @"INSERT INTO dbo.Note (UserId , title , description , lastEdit)
+                                    VALUES (@UserId, @Title, @Description , @LastEdit)";
 
          var noteParameters = new
          {
             UserId = userId,
             userInput.title,
-            userInput.description
+            userInput.description,
+            userInput.lastEdit
          };
 
          if (!_dapper.ExecuteSQL(noteSql, noteParameters))
@@ -30,6 +31,7 @@ namespace apitest
 
          result.title = noteParameters.title;
          result.description = noteParameters.description;
+         result.lastEdit = noteParameters.lastEdit;
          return result;
       }
 
@@ -48,13 +50,14 @@ namespace apitest
       {
          string updatePasswordQuery = @"
                         UPDATE dbo.Note 
-                        SET title = @title, description =  @description WHERE id = @id";
+                        SET title = @title, description =  @description , lastEdit = @LastEdit WHERE id = @id";
 
          var passwordParameters = new
          {
             id = id,
             userInput.title,
-            userInput.description
+            userInput.description,
+            userInput.lastEdit
          };
 
          if (!_dapper.ExecuteSQL(updatePasswordQuery, passwordParameters))

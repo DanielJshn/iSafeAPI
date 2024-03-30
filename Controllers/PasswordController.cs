@@ -68,10 +68,10 @@ public class PasswordController : ControllerBase
 
 
     [HttpPut("UpdatePassword/{id}")]
-    public IActionResult UpdatePassword(int id, [FromBody] PasswordDto userInput)
+    public IActionResult UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
     {
         checkAuthToken();
-        if (id == 0 || userInput == null)
+        if (id == null || userInput == null)
         {
             return BadRequest("Invalid input data or user information");
         }
@@ -90,7 +90,7 @@ public class PasswordController : ControllerBase
 
 
     [HttpDelete("DeletePassword/{id}")]
-    public IActionResult DeletePassword(int id)
+    public IActionResult DeletePassword(Guid id)
     {
         checkAuthToken();
         try

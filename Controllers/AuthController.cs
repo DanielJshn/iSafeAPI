@@ -112,7 +112,7 @@ namespace apitest
             int userId = getUserId();
             try
             {
-                passwordRepository.DeletePassword(userId);
+                passwordRepository.DeletePasswordData(userId);
                 passwordRepository.DeleteUser(userId);
             }
             catch (Exception ex)

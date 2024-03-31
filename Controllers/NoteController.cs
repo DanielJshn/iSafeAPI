@@ -50,15 +50,15 @@ public class NoteController : ControllerBase
         {
             return BadRequest("Неверный или отсутствующий идентификатор пользователя");
         }
-        List<NoteResponse> notes = _noteRepository.getAllPasswords(userId);
+        List<NoteResponse> notes = _noteRepository.getAllNotes(userId);
         return Ok(notes);
     }
 
     [HttpPut("UpdateData/{id}")]
-    public IActionResult UpdateData(int id, [FromBody] NoteDto userInput)
+    public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
         checkAuthToken();
-        if (id == 0 || userInput == null)
+        if (id == null || userInput == null)
         {
             return BadRequest("Invalid input data or user information");
         }
@@ -77,7 +77,7 @@ public class NoteController : ControllerBase
 
     
     [HttpDelete("DeleteData/{id}")]
-    public IActionResult DeleteData(int id)
+    public IActionResult DeleteData(Guid id)
     {
         checkAuthToken();
         try

@@ -12,12 +12,14 @@ namespace apitest
       }
       public NoteDto PostNote(int userId, NoteDto userInput)
       {
-         string noteSql = @"INSERT INTO dbo.Note (UserId , title , description , lastEdit)
-                                    VALUES (@UserId, @Title, @Description , @LastEdit)";
-
+         string noteSql = @"INSERT INTO dbo.Note (UserId , id , title , description , lastEdit)
+                                    VALUES (@UserId, @Id ,@Title, @Description , @LastEdit)";
+          var noteUUID = Guid.NewGuid();
+            userInput.id = noteUUID;
          var noteParameters = new
          {
             UserId = userId,
+            userInput.id,
             userInput.title,
             userInput.description,
             userInput.lastEdit
@@ -28,14 +30,14 @@ namespace apitest
             throw new Exception("Failed to add Passwords");
          }
          var result = new NoteDto();
-
+         result.id = noteParameters.id;
          result.title = noteParameters.title;
          result.description = noteParameters.description;
          result.lastEdit = noteParameters.lastEdit;
          return result;
       }
 
-      public List<NoteResponse> getAllPasswords(int userId)
+      public List<NoteResponse> getAllNotes(int userId)
       {
 
          string sql = @"SELECT * FROM dbo.Note WHERE UserId = @userId";
@@ -46,15 +48,15 @@ namespace apitest
          return resultPasswords;
       }
 
-      public void UpdateNote(int id, NoteDto userInput)
+      public void UpdateNote(Guid id, NoteDto userInput)
       {
          string updatePasswordQuery = @"
                         UPDATE dbo.Note 
                         SET title = @title, description =  @description , lastEdit = @LastEdit WHERE id = @id";
-
+              
          var passwordParameters = new
          {
-            id = id,
+             id,
             userInput.title,
             userInput.description,
             userInput.lastEdit
@@ -67,7 +69,7 @@ namespace apitest
 
 
       }
-      public void DeleteData(int id)
+      public void DeleteData(Guid id)
       {
 
          string sqlPassword = "DELETE FROM dbo.Note WHERE id = @id";

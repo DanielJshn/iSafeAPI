@@ -1,4 +1,5 @@
 using api.Controllers;
+using Microsoft.AspNetCore.Mvc;
 
 namespace apitest
 {
@@ -14,8 +15,8 @@ namespace apitest
       {
          string noteSql = @"INSERT INTO dbo.Note (UserId , id , title , description , lastEdit)
                                     VALUES (@UserId, @Id ,@Title, @Description , @LastEdit)";
-          var noteUUID = Guid.NewGuid();
-            userInput.id = noteUUID;
+         var noteUUID = Guid.NewGuid();
+         userInput.id = noteUUID;
          var noteParameters = new
          {
             UserId = userId,
@@ -48,24 +49,33 @@ namespace apitest
          return resultPasswords;
       }
 
-      public void UpdateNote(Guid id, NoteDto userInput)
+      public NoteDto UpdateNote(Guid id, NoteDto userInput)
       {
          string updatePasswordQuery = @"
                         UPDATE dbo.Note 
                         SET title = @title, description =  @description , lastEdit = @LastEdit WHERE id = @id";
-              
+         
          var passwordParameters = new
          {
-             id,
+            id,
             userInput.title,
             userInput.description,
             userInput.lastEdit
          };
-
+         
          if (!_dapper.ExecuteSQL(updatePasswordQuery, passwordParameters))
          {
             throw new Exception("Failed to update Passwords");
          }
+         
+         var result = new NoteDto();
+         {
+            result.id = id;
+            result.title = userInput.title;
+            result.description = userInput.description;
+            result.lastEdit = userInput.lastEdit;
+         };
+         return result;
 
 
       }

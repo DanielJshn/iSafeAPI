@@ -41,7 +41,7 @@ namespace apitest
         }
 
 
-        public void UpdatePassword(Guid id, PasswordDto userInput)
+        public PasswordDto UpdatePassword(Guid id, PasswordDto userInput)
         {
             string updatePasswordQuery = @"
                         UPDATE dbo.Passwords 
@@ -79,7 +79,7 @@ namespace apitest
                 INSERT INTO dbo.AdditionalFields (passwordId, id, title, [value])  
                 VALUES (@passwordId, @id, @title, @value)";
 
-                 var addFieldUUID = Guid.NewGuid();
+                var addFieldUUID = Guid.NewGuid();
                 additionalField.id = addFieldUUID;
 
                 var fieldParameters = new
@@ -95,6 +95,19 @@ namespace apitest
                     throw new Exception("Failed to add AdditionalField");
                 }
             }
+            var result = new PasswordDto
+            {
+                id = userInput.id,
+                password = userInput.password,
+                organization = userInput.organization,
+                title = userInput.title,
+                lastEdit = userInput.lastEdit,
+                additionalFields = userInput.additionalFields
+               .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
+               .ToList()
+            };
+
+            return result;
 
         }
 

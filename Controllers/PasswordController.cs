@@ -75,17 +75,17 @@ public class PasswordController : ControllerBase
         {
             return BadRequest("Invalid input data or user information");
         }
-
+        PasswordDto UpdatePasswordData;
         try
         {
-            passwordRepository.UpdatePassword(id, userInput);
+            UpdatePasswordData = passwordRepository.UpdatePassword(id, userInput);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
 
-        return Ok();
+        return Ok(UpdatePasswordData);
     }
 
 

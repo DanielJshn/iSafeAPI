@@ -62,17 +62,17 @@ public class NoteController : ControllerBase
         {
             return BadRequest("Invalid input data or user information");
         }
-
+          NoteDto updateData;
         try
         {
-            _noteRepository.UpdateNote(id, userInput);
+           updateData = _noteRepository.UpdateNote(id, userInput);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
 
-        return Ok();
+        return Ok(updateData);
     }
 
     

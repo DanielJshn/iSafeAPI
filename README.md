@@ -58,4 +58,4 @@ The endpoint GET Auth/RefreshToken refreshes the user access token
 
 ## Get the mobile application
 
-[Here](https://drive.google.com/file/d/1t1BguOmEW5mV7rWmeXgh_Z0xvYCVW41S/view?usp=sharing) is a link to the mobile application .apk. You can install it and see the API in action!## Architecture
+[Here](https://drive.google.com/file/d/198fBBzZ_MUPYtgHmBgLGvzp_CwkuL7QM/view?usp=sharing) is a link to the mobile application .apk. You can install it and see the API in action!## Architecture

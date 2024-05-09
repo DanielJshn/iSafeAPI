@@ -65,7 +65,6 @@ C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\staticwebassets.pack.json
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\staticwebassets.build.json
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\staticwebassets.development.json
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\scopedcss\bundle\TestAPI.styles.css
-C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.csproj.CopyComplete
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.dll
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\refint\TestAPI.dll
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.pdb
@@ -226,3 +225,6 @@ C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\zh-Hans\Microsoft.VisualS
 C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\zh-Hant\Microsoft.VisualStudio.TestPlatform.TestFramework.resources.dll
 C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.dll
 C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.xml
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\secureSettings.json
+C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.sourcelink.json
+C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.csproj.Up2Date

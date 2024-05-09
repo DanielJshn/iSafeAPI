@@ -23,12 +23,14 @@ namespace apitest
         PasswordRepository passwordRepository;
         private readonly IConfiguration _config;
         AuthRepository authRepository;
+        KeyConfig _keycon;
 
-        public AuthController(IConfiguration config)
+        public AuthController(IConfiguration config, KeyConfig keycon)
         {
             _dapper = new Datadapper(config);
             _authHelp = new AuthHelp(config);
             _config = config;
+            _keycon = keycon;
             authRepository = new AuthRepository(_dapper, _authHelp, HttpContext);
             passwordRepository = new PasswordRepository(_dapper);
         }
@@ -39,6 +41,16 @@ namespace apitest
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
             string token;
+
+
+            string secretKey = _keycon.GetSecretKey();
+
+            string decryptedEmail = DecryptStringAES(userForRegistration.Email, secretKey);
+            string decryptedPassword = DecryptStringAES(userForRegistration.Password, secretKey);
+
+            userForRegistration.Email = decryptedEmail;
+            userForRegistration.Password = decryptedPassword;
+
             try
             {
                 authRepository.CheckUser(userForRegistration);
@@ -52,6 +64,7 @@ namespace apitest
         }
 
 
+
         [AllowAnonymous]
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
@@ -59,6 +72,15 @@ namespace apitest
             string newToken;
             try
             {
+
+                string secretKey = _keycon.GetSecretKey();
+
+                string decryptedEmail = DecryptStringAES(userForLogin.Email, secretKey);
+                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey);
+
+                userForLogin.Email = decryptedEmail;
+                userForLogin.Password = decryptedPassword;
+
                 string token = authRepository.CheckEmail(userForLogin);
                 authRepository.CheckPassword(userForLogin);
                 int userId = _authHelp.GetUserIdFromToken(token);
@@ -106,14 +128,22 @@ namespace apitest
 
 
         [HttpDelete("DeleteAllData")]
-        public IActionResult DeleteAllData()
+        public IActionResult DeletedAllData()
         {
             checkAuthToken();
             int userId = getUserId();
             try
             {
-                passwordRepository.DeletePasswordData(userId);
+                List<Password> resultPasswords = passwordRepository.getAllPasswords(userId);
+                foreach (Password password in resultPasswords)
+                {
+                    string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
+                    _dapper.ExecuteSQL(sql, new { PasswordId = password.id });
+                }
+                string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
+                _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
                 passwordRepository.DeleteUser(userId);
+
             }
             catch (Exception ex)
             {
@@ -162,6 +192,33 @@ namespace apitest
                 conn.Close();
             }
             throw new Exception("Can't get user id");
+        }
+
+        [NonAction]
+        static string DecryptStringAES(string cipherText, string key)
+        {
+            byte[] cipherBytes = Convert.FromBase64String(cipherText);
+
+            using (AesManaged aesAlg = new AesManaged())
+            {
+                aesAlg.KeySize = 128;
+                aesAlg.BlockSize = 128;
+                aesAlg.Mode = CipherMode.ECB;
+                aesAlg.Padding = PaddingMode.PKCS7;
+
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+
+                using (MemoryStream msDecrypt = new MemoryStream(cipherBytes))
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV), CryptoStreamMode.Read))
+                    {
+                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                        {
+                            return srDecrypt.ReadToEnd();
+                        }
+                    }
+                }
+            }
         }
 
     }

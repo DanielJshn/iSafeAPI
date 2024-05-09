@@ -186,7 +186,7 @@ namespace apitest
         }
 
 
-        public void DeletePassword(Guid id)
+        public void  DeletePassword(Guid id)
         {
             string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
 
@@ -207,7 +207,7 @@ namespace apitest
             }
         }
 
-        public void DeletePasswordData(int id)
+        public void DeletePasswordData(Guid id)
         {
             string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
 
@@ -227,6 +227,8 @@ namespace apitest
                 throw new Exception("Failed to delete Passwords");
             }
         }
+
+        
 
 
         public void DeleteUser(int id)

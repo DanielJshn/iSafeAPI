@@ -58,7 +58,7 @@ public class NoteController : ControllerBase
     public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
         checkAuthToken();
-        if (id == null || userInput == null)
+        if (id == Guid.Empty || userInput == null)
         {
             return BadRequest("Invalid input data or user information");
         }

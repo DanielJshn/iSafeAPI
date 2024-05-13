@@ -101,7 +101,19 @@ namespace api.Controllers
             });
         }
 
+        public byte[] ExecuteSQLbyte(string? sql, object? parameters = null)
+        {
+            IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
 
+            if (parameters != null)
+            {
+                return dbConnection.QueryFirstOrDefault<byte[]>(sql, parameters);
+            }
+            else
+            {
+                return dbConnection.QueryFirstOrDefault<byte[]>(sql);
+            }
+        }
     }
 }
 

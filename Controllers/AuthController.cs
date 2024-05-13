@@ -152,6 +152,40 @@ namespace apitest
             return Ok("Account deleted");
         }
 
+        [HttpPut("ChangePassword")]
+        public IActionResult ChangePassword(UserForChangePassword userForLogin)
+        {
+            checkAuthToken();
+            int userId = getUserId();
+            try
+            {
+                string secretKey = _keycon.GetSecretKey();
+                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey);
+                userForLogin.Password = decryptedPassword;
+
+                byte[] passwordSalt = authRepository.GetSaltForUserId(userId);
+                byte[] oldPasswordHash = authRepository.GetHashForUserId(userId);
+
+                byte[] passwordConfirmationHash = _authHelp.GetPasswordHash(userForLogin.Password, passwordSalt);
+
+                if (!passwordConfirmationHash.SequenceEqual(oldPasswordHash))
+                {
+                    throw new Exception("Current password is incorrect");
+                }
+
+                byte[] newPasswordHash = _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
+
+                authRepository.ChangeUserPassword(userId, newPasswordHash);
+
+                return Ok("Password successfully Cchanged");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
 
         private ObjectResult? checkAuthToken()
         {
@@ -199,7 +233,7 @@ namespace apitest
         {
             byte[] cipherBytes = Convert.FromBase64String(cipherText);
 
-            using (AesManaged aesAlg = new AesManaged())
+            using (Aes aesAlg = Aes.Create())
             {
                 aesAlg.KeySize = 128;
                 aesAlg.BlockSize = 128;

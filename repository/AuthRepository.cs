@@ -35,9 +35,7 @@ namespace apitest
             }
 
         }
-
-
-
+       
 
         public string RegistrEndInsert(UserForRegistrationDto userForRegistration)
         {
@@ -106,9 +104,41 @@ namespace apitest
             {
                 throw new Exception("Incorrect password!");
             }
-
-
         }
+
+        public byte[] GetSaltForUserId(int userId)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentException("The correct user ID is not specified");
+            }
+
+            string sql = @"SELECT PasswordSalt FROM Tokens WHERE UserId = @UserId";
+            return _dapper.ExecuteSQLbyte(sql, new { UserId = userId });
+        }
+
+        public byte[] GetHashForUserId(int userId)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentException("The correct user ID is not specified");
+            }
+
+            string sql = @"SELECT PasswordHash FROM Tokens WHERE UserId = @UserId";
+            return _dapper.ExecuteSQLbyte(sql, new { UserId = userId });
+        }
+
+        public void ChangeUserPassword(int userId, byte[] newPasswordHash)
+        {
+            if (userId <= 0 || newPasswordHash == null || newPasswordHash.Length == 0)
+            {
+                throw new ArgumentException("The correct data for changing the password is not specified");
+            }
+
+            string sqlUpdatePassword = @"UPDATE Tokens SET PasswordHash = @NewPasswordHash WHERE UserId = @UserId";
+            _dapper.ExecuteSQL(sqlUpdatePassword, new { NewPasswordHash = newPasswordHash, UserId = userId });
+        }
+
 
 
     }

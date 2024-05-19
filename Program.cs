@@ -1,4 +1,5 @@
 using System.Text;
+using apitest;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Options;
@@ -33,9 +34,6 @@ CorsBuilder.WithOrigins("https://myProduct.com")
 });
 
 
-
-
-
  string? TokenKeyString = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -52,6 +50,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     
 
 
+builder.Services.AddScoped<NotesService>();
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
  
 var app = builder.Build();
 

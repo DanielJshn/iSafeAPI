@@ -161,7 +161,9 @@ namespace apitest
             {
                 string secretKey = _keycon.GetSecretKey();
                 string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey);
+                string decryptedNewPassword = DecryptStringAES(userForLogin.NewPassword, secretKey);
                 userForLogin.Password = decryptedPassword;
+                userForLogin.NewPassword = decryptedNewPassword;
 
                 byte[] passwordSalt = authRepository.GetSaltForUserId(userId);
                 byte[] oldPasswordHash = authRepository.GetHashForUserId(userId);
@@ -177,7 +179,7 @@ namespace apitest
 
                 authRepository.ChangeUserPassword(userId, newPasswordHash);
 
-                return Ok("Password successfully Cchanged");
+                return Ok("Password successfully Changed");
             }
             catch (Exception ex)
             {

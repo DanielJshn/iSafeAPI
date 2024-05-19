@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "hlZGCHSYueqP3u1OoW90BkQaHfvMG3HAkM1+6DLXdZh5qfzaHCQlEoCyS38N5Er9FjMLouVUPXTCZZH0TXx+PQ==",
+  "dgSpecHash": "3NNDnFsg7XoIPqX2WJPLuZ1jKFsK+f7Ifwke1A7vC1ZddAXXAMbn9f2InEslZo8vFIgdZaI6IjVLQZ+NHumZ+w==",
   "success": true,
   "projectFilePath": "C:\\Users\\DanielDobosh\\Desktop\\TestAPI\\TestAPI.csproj",
   "expectedPackageFiles": [
@@ -108,5 +108,16 @@
     "C:\\Users\\DanielDobosh\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "C:\\Users\\DanielDobosh\\.nuget\\packages\\system.windows.extensions\\6.0.0\\system.windows.extensions.6.0.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.Data.SqlClient' 5.1.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-98g6-xh36-x2p7",
+      "libraryId": "Microsoft.Data.SqlClient",
+      "targetGraphs": [
+        "net7.0"
+      ]
+    }
+  ]
 }

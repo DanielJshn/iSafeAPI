@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Data.Common;
 using api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,29 +8,41 @@ namespace apitest;
 [Authorize]
 [ApiController]
 [Route("[controller]")]
-public class PasswordController : ControllerBase
+public class NoteController : ControllerBase
 {
     private readonly Datadapper _dapper;
-    private readonly PasswordRepository passwordRepository;
-    private readonly IConfiguration _config;
+    public readonly IConfiguration _config;
 
-    public PasswordController(IConfiguration config)
+    NoteRepository _noteRepository;
+    public NoteController(IConfiguration config)
     {
         _dapper = new Datadapper(config);
         _config = config;
-        passwordRepository = new PasswordRepository(_dapper);
+
+        _noteRepository = new NoteRepository(_dapper);
     }
 
-
-    [HttpGet("TestConnection")]
-    public DateTime TestConnection()
+    [HttpPost("AddNote")]
+    public IActionResult AddNote(NoteDto note)
     {
-        return passwordRepository.TestConnection();
+
+        checkAuthToken();
+        int userId = getUserId();
+        NoteDto CreatedNote;
+        try
+        {
+            CreatedNote = _noteRepository.PostNote(userId, note);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        return Ok(CreatedNote);
     }
 
-
-    [HttpGet("GetPassword")]
-    public IActionResult GetPasswords()
+    [HttpGet("GetNote")]
+    public IActionResult GetNote()
     {
         checkAuthToken();
         int userId = getUserId();
@@ -38,72 +50,46 @@ public class PasswordController : ControllerBase
         {
             return BadRequest("Неверный или отсутствующий идентификатор пользователя");
         }
-        List<Password> resultPasswords = passwordRepository.getAllPasswords(userId);
-
-        return Ok(resultPasswords);
+        List<NoteResponse> notes = _noteRepository.getAllNotes(userId);
+        return Ok(notes);
     }
 
-
-    [HttpPost("AddPassword")]
-    public IActionResult AddPassword([FromBody] PasswordDto userInput)
-    {
-        checkAuthToken();
-        if (userInput == null || userInput.additionalFields == null)
-        {
-            return BadRequest("Invalid input data");
-        }
-        int userId = getUserId();
-        PasswordDto CreatedPassword;
-        try
-        {
-            CreatedPassword = passwordRepository.PostPassword(userId, userInput);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-
-        return Ok(CreatedPassword);
-    }
-
-
-    [HttpPut("UpdatePassword/{id}")]
-    public IActionResult UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
+    [HttpPut("UpdateData/{id}")]
+    public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
         checkAuthToken();
         if (id == null || userInput == null)
         {
             return BadRequest("Invalid input data or user information");
         }
-        PasswordDto UpdatePasswordData;
+          NoteDto updateData;
         try
         {
-            UpdatePasswordData = passwordRepository.UpdatePassword(id, userInput);
+           updateData = _noteRepository.UpdateNote(id, userInput);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
 
-        return Ok(UpdatePasswordData);
+        return Ok(updateData);
     }
 
-
-    [HttpDelete("DeletePassword/{id}")]
-    public IActionResult DeletePassword(Guid id)
+    
+    [HttpDelete("DeleteData/{id}")]
+    public IActionResult DeleteData(Guid id)
     {
         checkAuthToken();
         try
         {
-            passwordRepository.DeletePassword(id);
-        }
-        catch (Exception ex)
+            _noteRepository.DeleteData(id);
+        } catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
         return Ok("User successfully deleted");
+    
     }
-
 
     private ObjectResult? checkAuthToken()
     {
@@ -118,16 +104,18 @@ public class PasswordController : ControllerBase
         return null;
     }
 
-
     [NonAction]
     public int getUserId()
     {
+
         string? accessToken = HttpContext.Request.Headers["Authorization"];
+
         if (accessToken != null && accessToken.StartsWith("Bearer "))
         {
             accessToken = accessToken.Substring("Bearer ".Length);
         }
         accessToken = accessToken?.Trim();
+
         int userId = 0;
 
         string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
@@ -145,7 +133,4 @@ public class PasswordController : ControllerBase
         }
         throw new Exception("Can't get user id");
     }
-
-
-
 }

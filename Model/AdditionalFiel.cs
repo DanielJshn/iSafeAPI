@@ -4,8 +4,8 @@ namespace apitest
 {
     public partial class AdditionalField
     {
-        public int passwordId { get; set; }
-        public int id { get; set; }
+        public Guid passwordId { get; set; }
+        public Guid id { get; set; }
         public string title { get; set; }
         public string value { get; set; }
 

@@ -12,14 +12,13 @@ public class NoteController : ControllerBase
 {
     private readonly Datadapper _dapper;
     public readonly IConfiguration _config;
+    private NotesService _notesService;
 
-    NoteRepository _noteRepository;
-    public NoteController(IConfiguration config)
+    public NoteController(IConfiguration config, NotesService notesService)
     {
         _dapper = new Datadapper(config);
         _config = config;
-
-        _noteRepository = new NoteRepository(_dapper);
+        _notesService = notesService;
     }
 
     [HttpPost("AddNote")]
@@ -31,7 +30,7 @@ public class NoteController : ControllerBase
         NoteDto CreatedNote;
         try
         {
-            CreatedNote = _noteRepository.PostNote(userId, note);
+            CreatedNote = _notesService.AddNote(userId, note);
         }
         catch (Exception ex)
         {
@@ -46,11 +45,15 @@ public class NoteController : ControllerBase
     {
         checkAuthToken();
         int userId = getUserId();
-        if (userId == 0)
+        List<NoteResponse> notes;
+        try
         {
-            return BadRequest("Неверный или отсутствующий идентификатор пользователя");
+            notes = _notesService.GetNotes(userId);
         }
-        List<NoteResponse> notes = _noteRepository.getAllNotes(userId);
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
         return Ok(notes);
     }
 
@@ -58,37 +61,33 @@ public class NoteController : ControllerBase
     public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
         checkAuthToken();
-        if (id == Guid.Empty || userInput == null)
-        {
-            return BadRequest("Invalid input data or user information");
-        }
-          NoteDto updateData;
+        NoteDto updateData;
         try
         {
-           updateData = _noteRepository.UpdateNote(id, userInput);
+            updateData = _notesService.UpdateNote(id, userInput);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
-
         return Ok(updateData);
     }
 
-    
+
     [HttpDelete("DeleteData/{id}")]
     public IActionResult DeleteData(Guid id)
     {
         checkAuthToken();
         try
         {
-            _noteRepository.DeleteData(id);
-        } catch (Exception ex)
+            _notesService.DeleteNote(id);
+        }
+        catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
         return Ok("User successfully deleted");
-    
+
     }
 
     private ObjectResult? checkAuthToken()

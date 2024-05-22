@@ -1,6 +1,6 @@
 using System.Data;
 using System.Security.Cryptography;
-using api.Controllers;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
@@ -106,18 +106,18 @@ namespace apitest
             }
         }
 
-        public byte[] GetSaltForUserId(int userId)
+        public byte[]? GetSaltForUserId(int userId)
         {
             if (userId <= 0)
             {
                 throw new ArgumentException("The correct user ID is not specified");
             }
 
-            string sql = @"SELECT PasswordSalt FROM Tokens WHERE UserId = @UserId";
+            string? sql = @"SELECT PasswordSalt FROM Tokens WHERE UserId = @UserId";
             return _dapper.ExecuteSQLbyte(sql, new { UserId = userId });
         }
 
-        public byte[] GetHashForUserId(int userId)
+        public byte[]? GetHashForUserId(int userId)
         {
             if (userId <= 0)
             {

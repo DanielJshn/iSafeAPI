@@ -1,4 +1,4 @@
-using api.Controllers;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace apitest
@@ -53,40 +53,43 @@ namespace apitest
          return resultPasswords;
       }
 
-      public NoteDto UpdateNote(Guid userId, NoteDto noteDto)
+      public NoteDto UpdateNote(Guid noteId, NoteDto noteDto)
       {
-         string updatePasswordQuery = @"
-                        UPDATE dbo.Note 
-                        SET title = @title, description =  @description , lastEdit = @LastEdit WHERE id = @id";
+         string updateNoteQuery = @"
+                    UPDATE dbo.Note 
+                    SET title = @title, description = @description, lastEdit = @lastEdit 
+                    WHERE id = @id";
 
-         var passwordParameters = new
+         var noteParameters = new
          {
-            userId,
+            id = noteId,
             noteDto.title,
             noteDto.description,
             noteDto.lastEdit
          };
 
-         if (!_dapper.ExecuteSQL(updatePasswordQuery, passwordParameters))
+         if (!_dapper.ExecuteSQL(updateNoteQuery, noteParameters))
          {
-            throw new Exception("Failed to update Passwords");
+            throw new Exception("Failed to update note");
          }
 
-         var result = new NoteDto();
+         var result = new NoteDto
          {
-            result.id = userId;
-            result.title = noteDto.title;
-            result.description = noteDto.description;
-            result.lastEdit = noteDto.lastEdit;
+            id = noteId,
+            title = noteDto.title,
+            description = noteDto.description,
+            lastEdit = noteDto.lastEdit
          };
+
          return result;
       }
 
 
+
       public void DeleteNote(Guid noteId)
       {
-
-         string sqlPassword = "DELETE FROM dbo.Note WHERE id = @id";
+         
+         string sqlPassword = "DELETE FROM dbo.Note WHERE id = @noteId";
 
          if (!_dapper.ExecuteSQL(sqlPassword, new { noteId }))
          {

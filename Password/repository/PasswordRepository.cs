@@ -1,12 +1,12 @@
 
-using api.Controllers;
+
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 
 namespace apitest
 {
-    public class PasswordRepository
+    public class PasswordRepository : IPasswordRepository
     {
         private readonly Datadapper _dapper;
 
@@ -206,43 +206,6 @@ namespace apitest
                 throw new Exception("Failed to delete Passwords");
             }
         }
-
-        public void DeletePasswordData(Guid id)
-        {
-            string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
-
-            var count = _dapper.LoadDatatwoParam<int>(countQuery, new { id }).FirstOrDefault();
-
-            if (count > 0)
-            {
-                string sqlAdditional = "DELETE FROM dbo.AdditionalFields WHERE passwordId = @id";
-
-                _dapper.ExecuteSQL(sqlAdditional, new { id });
-            }
-
-            string sqlPassword = "DELETE FROM dbo.Passwords WHERE id = @id";
-
-            if (!_dapper.ExecuteSQL(sqlPassword, new { id }))
-            {
-                throw new Exception("Failed to delete Passwords");
-            }
-        }
-
-        
-
-
-        public void DeleteUser(int id)
-        {
-            string sqlUser = "DELETE FROM dbo.Tokens WHERE UserId = @id";
-
-            if (!_dapper.ExecuteSQL(sqlUser, new { id }))
-            {
-                throw new Exception("Failed to delete User");
-            }
-        }
-
-
-
 
     }
 

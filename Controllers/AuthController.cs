@@ -3,7 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using api.Controllers;
+
 using apitest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,13 +24,15 @@ namespace apitest
         private readonly IConfiguration _config;
         AuthRepository authRepository;
         KeyConfig _keycon;
+        private readonly CheckId _checkId;
 
-        public AuthController(IConfiguration config, KeyConfig keycon)
+        public AuthController(IConfiguration config, KeyConfig keycon, CheckId checkId)
         {
             _dapper = new Datadapper(config);
             _authHelp = new AuthHelp(config);
             _config = config;
             _keycon = keycon;
+            _checkId = checkId;
             authRepository = new AuthRepository(_dapper, _authHelp, HttpContext);
             passwordRepository = new PasswordRepository(_dapper);
         }
@@ -130,8 +132,8 @@ namespace apitest
         [HttpDelete("DeleteAllData")]
         public IActionResult DeletedAllData()
         {
-            checkAuthToken();
-            int userId = getUserId();
+            _checkId.checkAuthToken();
+            int userId = _checkId.getUserId();
             try
             {
                 List<Password> resultPasswords = passwordRepository.getAllPasswords(userId);
@@ -142,7 +144,7 @@ namespace apitest
                 }
                 string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
                 _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
-                passwordRepository.DeleteUser(userId);
+                DeleteUser(userId);
 
             }
             catch (Exception ex)
@@ -155,8 +157,8 @@ namespace apitest
         [HttpPut("ChangePassword")]
         public IActionResult ChangePassword(UserForChangePassword userForLogin)
         {
-            checkAuthToken();
-            int userId = getUserId();
+            _checkId.checkAuthToken();
+            int userId = _checkId.getUserId();
             try
             {
                 string secretKey = _keycon.GetSecretKey();
@@ -187,49 +189,7 @@ namespace apitest
             }
         }
 
-
-
-        private ObjectResult? checkAuthToken()
-        {
-            try
-            {
-                getUserId();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(401, ex.Message);
-            }
-            return null;
-        }
-
-
-        [NonAction]
-        public int getUserId()
-        {
-            string? accessToken = HttpContext.Request.Headers["Authorization"];
-            if (accessToken != null && accessToken.StartsWith("Bearer "))
-            {
-                accessToken = accessToken.Substring("Bearer ".Length);
-            }
-            accessToken = accessToken?.Trim();
-            int userId = 0;
-
-            string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
-            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
-            {
-                conn.Open();
-                SqlCommand command = new SqlCommand(sql0, conn);
-                object result = command.ExecuteScalar();
-                if (result != null)
-                {
-                    userId = Convert.ToInt32(result);
-                    return userId;
-                }
-                conn.Close();
-            }
-            throw new Exception("Can't get user id");
-        }
-
+       
         [NonAction]
         static string DecryptStringAES(string cipherText, string key)
         {
@@ -254,6 +214,15 @@ namespace apitest
                         }
                     }
                 }
+            }
+        }
+        public void DeleteUser(int id)
+        {
+            string sqlUser = "DELETE FROM dbo.Tokens WHERE UserId = @id";
+
+            if (!_dapper.ExecuteSQL(sqlUser, new { id }))
+            {
+                throw new Exception("Failed to delete User");
             }
         }
 

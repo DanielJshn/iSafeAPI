@@ -10,83 +10,79 @@ namespace apitest;
 [Route("[controller]")]
 public class NoteController : ControllerBase
 {
-    public NotesService _notesService;
-    public CheckId _checkId;
-    
-    public NoteController(NotesService notesService,  CheckId checkId)
-    {
+    private readonly NotesService _notesService;
+    private readonly CheckId _checkId;
+    private readonly ILogger<NoteController> _logger;
 
+    public NoteController(NotesService notesService, CheckId checkId, ILogger<NoteController> logger)
+    {
         _notesService = notesService;
         _checkId = checkId;
-        
+        _logger = logger;
     }
 
-    [HttpPost("AddNote")]
-    public IActionResult AddNote(NoteDto note)
+    [HttpPost("AddNote/{id}")]
+    public IActionResult AddNote(NoteDto note, int id)
     {
-        _checkId.checkAuthToken();
-        int userId = _checkId.getUserId();
-        NoteDto CreatedNote;
+        // _checkId.checkAuthToken();
+        NoteDto createdNote;
         try
         {
-            CreatedNote = _notesService.AddNote(userId, note);
+            createdNote = _notesService.AddNote(id, note);
+            return Ok(createdNote);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while adding note.");
             return BadRequest(ex.Message);
         }
-        return Ok(CreatedNote);
     }
-
 
     [HttpGet("GetNote")]
     public IActionResult GetNote()
     {
-        _checkId.checkAuthToken();
-        int userId = _checkId.getUserId();
-        List<NoteResponse> notes;
         try
         {
-            notes = _notesService.GetNotes(userId);
+            int userId = _checkId.ValidateAndGetUserId();
+            List<NoteResponse> notes = _notesService.GetNotes(userId);
+            return Ok(notes);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while getting notes.");
             return BadRequest(ex.Message);
         }
-        return Ok(notes);
     }
-
 
     [HttpPut("UpdateData/{id}")]
     public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
-        _checkId.checkAuthToken();
-        NoteDto updateData;
         try
         {
-            updateData = _notesService.UpdateNote(id, userInput);
+            _checkId.ValidateAndGetUserId(); 
+            NoteDto updatedData = _notesService.UpdateNote(id, userInput);
+            return Ok(updatedData);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while updating note.");
             return BadRequest(ex.Message);
         }
-        return Ok(updateData);
     }
-
 
     [HttpDelete("DeleteData/{id}")]
     public IActionResult DeleteData(Guid id)
     {
-        _checkId.checkAuthToken();
         try
         {
+            _checkId.ValidateAndGetUserId(); 
             _notesService.DeleteNote(id);
+            return Ok("Note successfully deleted");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while deleting note.");
             return BadRequest(ex.Message);
         }
-        return Ok("User successfully deleted");
     }
-   
 }

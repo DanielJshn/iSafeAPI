@@ -9,73 +9,78 @@ namespace apitest;
 [Route("[controller]")]
 public class PasswordController : ControllerBase
 {
-
     private readonly PasswordService _passwordService;
     private readonly CheckId _checkId;
-    public PasswordController(PasswordService passwordService, CheckId checkId)
+    private readonly ILogger<PasswordController> _logger;
+
+    public PasswordController(PasswordService passwordService, CheckId checkId, ILogger<PasswordController> logger)
     {
         _passwordService = passwordService;
         _checkId = checkId;
+        _logger = logger;
     }
 
-
-    [HttpGet("GetPassword")]
+    [HttpGet("GetPasswords")]
     public IActionResult GetPasswords()
     {
-        _checkId.checkAuthToken();
-        int userId = _checkId.getUserId();
-        List<Password> resultPasswords = _passwordService.getAllPasswords(userId);
-        return Ok(resultPasswords);
+        try
+        {
+            int userId = _checkId.ValidateAndGetUserId();
+            List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
+            return Ok(resultPasswords);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while getting passwords.");
+            return BadRequest(ex.Message);
+        }
     }
-
 
     [HttpPost("AddPassword")]
     public IActionResult AddPassword([FromBody] PasswordDto userInput)
     {
-        _checkId.checkAuthToken();
-        int userId = _checkId.getUserId();
-        PasswordDto CreatedPassword;
         try
         {
-            CreatedPassword = _passwordService.PostPassword(userId, userInput);
+            int userId = _checkId.ValidateAndGetUserId();
+            PasswordDto createdPassword = _passwordService.PostPassword(userId, userInput);
+            return Ok(createdPassword);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while adding password.");
             return BadRequest(ex.Message);
         }
-        return Ok(CreatedPassword);
     }
-
 
     [HttpPut("UpdatePassword/{id}")]
     public IActionResult UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
     {
-        _checkId.checkAuthToken();
-        PasswordDto UpdatePasswordData;
         try
         {
-            UpdatePasswordData = _passwordService.UpdatePassword(id, userInput);
+            _checkId.ValidateAndGetUserId(); // userId is not used, so removed the assignment
+            PasswordDto updatedPassword = _passwordService.UpdatePassword(id, userInput);
+            return Ok(updatedPassword);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while updating password.");
             return BadRequest(ex.Message);
         }
-        return Ok(UpdatePasswordData);
     }
-
 
     [HttpDelete("DeletePassword/{id}")]
     public IActionResult DeletePassword(Guid id)
     {
-        _checkId.checkAuthToken();
         try
         {
+            _checkId.ValidateAndGetUserId(); // userId is not used, so removed the assignment
             _passwordService.DeletePassword(id);
+            return Ok("Password successfully deleted");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred while deleting password.");
             return BadRequest(ex.Message);
         }
-        return Ok("User successfully deleted");
     }
 }

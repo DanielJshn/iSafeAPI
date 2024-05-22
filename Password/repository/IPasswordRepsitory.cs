@@ -1,10 +1,11 @@
+
 namespace apitest
 {
     public interface IPasswordRepository
     {
-        public List<Password> getAllPasswords(int userId);
-        public PasswordDto UpdatePassword(Guid id, PasswordDto userInput);
-        public PasswordDto PostPassword(int userId, PasswordDto passwordInput);
-        public void DeletePassword(Guid id);
+        List<Password> GetAllPasswords(int userId);
+        PasswordDto UpdatePassword(Guid id, PasswordDto userInput);
+        PasswordDto PostPassword(int userId, PasswordDto passwordInput);
+        void DeletePassword(Guid id);
     }
 }

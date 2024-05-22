@@ -54,7 +54,7 @@ builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<NotesService>();
 builder.Services.AddScoped<IPasswordRepository, PasswordRepository>();
 builder.Services.AddScoped<PasswordService>();
-
+builder.Services.AddScoped<CheckId>();
 
 
 

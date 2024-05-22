@@ -132,11 +132,11 @@ namespace apitest
         [HttpDelete("DeleteAllData")]
         public IActionResult DeletedAllData()
         {
-            _checkId.checkAuthToken();
-            int userId = _checkId.getUserId();
+            
+            int userId = _checkId.ValidateAndGetUserId();
             try
             {
-                List<Password> resultPasswords = passwordRepository.getAllPasswords(userId);
+                List<Password> resultPasswords = passwordRepository.GetAllPasswords(userId);
                 foreach (Password password in resultPasswords)
                 {
                     string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
@@ -157,8 +157,8 @@ namespace apitest
         [HttpPut("ChangePassword")]
         public IActionResult ChangePassword(UserForChangePassword userForLogin)
         {
-            _checkId.checkAuthToken();
-            int userId = _checkId.getUserId();
+           
+            int userId = _checkId.ValidateAndGetUserId();
             try
             {
                 string secretKey = _keycon.GetSecretKey();

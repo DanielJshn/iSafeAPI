@@ -18,23 +18,22 @@ namespace apitest
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly Datadapper _dapper;
+        // private readonly Datadapper _dapper;
         private readonly AuthHelp _authHelp;
         PasswordRepository passwordRepository;
         private readonly IConfiguration _config;
-        AuthRepository authRepository;
+        private readonly AuthService _authService;
         KeyConfig _keycon;
-        private readonly CheckId _checkId;
 
-        public AuthController(IConfiguration config, KeyConfig keycon, CheckId checkId)
+
+        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService)
         {
-            _dapper = new Datadapper(config);
+
             _authHelp = new AuthHelp(config);
             _config = config;
             _keycon = keycon;
-            _checkId = checkId;
-            authRepository = new AuthRepository(_dapper, _authHelp, HttpContext);
-            passwordRepository = new PasswordRepository(_dapper);
+            _authService = authService;
+
         }
 
 
@@ -55,8 +54,8 @@ namespace apitest
 
             try
             {
-                authRepository.CheckUser(userForRegistration);
-                token = authRepository.RegistrEndInsert(userForRegistration);
+                _authService.CheckUser(userForRegistration);
+                token = _authService.RegistrEndInsert(userForRegistration);
             }
             catch (Exception ex)
             {
@@ -83,8 +82,8 @@ namespace apitest
                 userForLogin.Email = decryptedEmail;
                 userForLogin.Password = decryptedPassword;
 
-                string token = authRepository.CheckEmail(userForLogin);
-                authRepository.CheckPassword(userForLogin);
+                string token = _authService.CheckEmail(userForLogin);
+                _authService.CheckPassword(userForLogin);
                 int userId = _authHelp.GetUserIdFromToken(token);
                 if (userId == 0)
                 {
@@ -132,19 +131,12 @@ namespace apitest
         [HttpDelete("DeleteAllData")]
         public IActionResult DeletedAllData()
         {
-            
-            int userId = _checkId.ValidateAndGetUserId();
+            int userId = getUserId(); 
             try
             {
                 List<Password> resultPasswords = passwordRepository.GetAllPasswords(userId);
-                foreach (Password password in resultPasswords)
-                {
-                    string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
-                    _dapper.ExecuteSQL(sql, new { PasswordId = password.id });
-                }
-                string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
-                _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
-                DeleteUser(userId);
+                _authService.DeletePasswordData(resultPasswords, userId);
+                _authService.DeleteUser(userId);
 
             }
             catch (Exception ex)
@@ -154,11 +146,12 @@ namespace apitest
             return Ok("Account deleted");
         }
 
+
         [HttpPut("ChangePassword")]
         public IActionResult ChangePassword(UserForChangePassword userForLogin)
         {
-           
-            int userId = _checkId.ValidateAndGetUserId();
+
+            int userId = getUserId();
             try
             {
                 string secretKey = _keycon.GetSecretKey();
@@ -167,8 +160,8 @@ namespace apitest
                 userForLogin.Password = decryptedPassword;
                 userForLogin.NewPassword = decryptedNewPassword;
 
-                byte[] passwordSalt = authRepository.GetSaltForUserId(userId);
-                byte[] oldPasswordHash = authRepository.GetHashForUserId(userId);
+                byte[] passwordSalt = _authService.GetSaltForUserId(userId);
+                byte[] oldPasswordHash = _authService.GetHashForUserId(userId);
 
                 byte[] passwordConfirmationHash = _authHelp.GetPasswordHash(userForLogin.Password, passwordSalt);
 
@@ -179,7 +172,7 @@ namespace apitest
 
                 byte[] newPasswordHash = _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
 
-                authRepository.ChangeUserPassword(userId, newPasswordHash);
+                _authService.ChangeUserPassword(userId, newPasswordHash);
 
                 return Ok("Password successfully Changed");
             }
@@ -189,7 +182,7 @@ namespace apitest
             }
         }
 
-       
+
         [NonAction]
         static string DecryptStringAES(string cipherText, string key)
         {
@@ -216,18 +209,42 @@ namespace apitest
                 }
             }
         }
-        public void DeleteUser(int id)
+        
+        [NonAction]
+        public int getUserId()
         {
-            string sqlUser = "DELETE FROM dbo.Tokens WHERE UserId = @id";
 
-            if (!_dapper.ExecuteSQL(sqlUser, new { id }))
+            string? accessToken = HttpContext.Request.Headers["Authorization"];
+
+            if (accessToken != null && accessToken.StartsWith("Bearer "))
             {
-                throw new Exception("Failed to delete User");
+                accessToken = accessToken.Substring("Bearer ".Length);
             }
-        }
+            accessToken = accessToken?.Trim();
 
+            int userId = 0;
+
+            string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
+            using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand(sql0, conn);
+                object result = command.ExecuteScalar();
+                if (result != null)
+                {
+                    userId = Convert.ToInt32(result);
+                    return userId;
+                }
+                conn.Close();
+            }
+            throw new Exception("Can't get user id");
+        }
     }
 }
+
+
+
+
 
 
 

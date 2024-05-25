@@ -2,7 +2,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace apitest
 {
-    public class PasswordService : IPasswordRepository
+    public class PasswordService 
     {
         private readonly IPasswordRepository _passwordRepository;
 
@@ -25,7 +25,7 @@ namespace apitest
                 return new List<Password>();
             }
 
-            return passwords;
+            return _passwordRepository.GetAllPasswords(userId);
         }
 
         public PasswordDto UpdatePassword(Guid id, PasswordDto userInput)

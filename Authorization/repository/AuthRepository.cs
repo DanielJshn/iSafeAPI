@@ -7,35 +7,26 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace apitest
 {
-    class AuthRepository
+    class AuthRepository : IAuthRepository
     {
         private readonly Datadapper _dapper;
-        private readonly HttpContext _context;
+
         private readonly AuthHelp _authHelp;
 
-
-
-        public AuthRepository(Datadapper dapper, AuthHelp authHelp, HttpContext context)
+        public AuthRepository(Datadapper dapper, AuthHelp authHelp)
         {
-            _context = context;
             _dapper = dapper;
             _authHelp = authHelp;
-
-
         }
+
 
         public void CheckUser(UserForRegistrationDto userForRegistration)
         {
             string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = @UserEmail";
             IEnumerable<string> existingUsers = _dapper.LoadDatatwoParam<string>(sqlCheckUserExists, new { UserEmail = userForRegistration.Email });
 
-            if (existingUsers.Any())
-            {
-                throw new Exception("User with this email already exists!");
-            }
-
         }
-       
+
 
         public string RegistrEndInsert(UserForRegistrationDto userForRegistration)
         {
@@ -47,22 +38,19 @@ namespace apitest
 
             byte[] passwordHash = _authHelp.GetPasswordHash(userForRegistration.Password, passwordSalt);
 
-
             string token = _authHelp.CreateToken(userForRegistration.Email);
 
             string sqlAddAuth = @"
                 INSERT INTO dbo.Tokens  ([Email], [PasswordHash], [PasswordSalt], [TokenValue]) 
                 VALUES (@Email, @PasswordHash, @PasswordSalt, @TokenValue)";
 
-
-
             List<SqlParameter> sqlParameters = new List<SqlParameter>
-    {
+        {
         new SqlParameter("@Email", SqlDbType.NVarChar) { Value = userForRegistration.Email },
         new SqlParameter("@PasswordHash", SqlDbType.VarBinary) { Value = passwordHash },
         new SqlParameter("@PasswordSalt", SqlDbType.VarBinary) { Value = passwordSalt },
         new SqlParameter("@TokenValue", SqlDbType.NVarChar) { Value = token }
-    };
+        };
 
             if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
             {
@@ -72,8 +60,8 @@ namespace apitest
             {
                 throw new Exception("Failed to register user.");
             }
-
         }
+
 
         public string CheckEmail(UserForLoginDto userForLogin)
         {
@@ -86,8 +74,9 @@ namespace apitest
                 throw new Exception("Incorrect Email!");
             }
             return token.TokenValue;
-
         }
+
+
         public void CheckPassword(UserForLoginDto userForLogin)
         {
             string sqlForHashAndSalt = @"SELECT [PasswordHash], [PasswordSalt] FROM dbo.Tokens WHERE Email = @UserEmail";
@@ -106,6 +95,7 @@ namespace apitest
             }
         }
 
+
         public byte[]? GetSaltForUserId(int userId)
         {
             if (userId <= 0)
@@ -116,6 +106,7 @@ namespace apitest
             string? sql = @"SELECT PasswordSalt FROM Tokens WHERE UserId = @UserId";
             return _dapper.ExecuteSQLbyte(sql, new { UserId = userId });
         }
+
 
         public byte[]? GetHashForUserId(int userId)
         {
@@ -128,6 +119,7 @@ namespace apitest
             return _dapper.ExecuteSQLbyte(sql, new { UserId = userId });
         }
 
+
         public void ChangeUserPassword(int userId, byte[] newPasswordHash)
         {
             if (userId <= 0 || newPasswordHash == null || newPasswordHash.Length == 0)
@@ -138,8 +130,26 @@ namespace apitest
             string sqlUpdatePassword = @"UPDATE Tokens SET PasswordHash = @NewPasswordHash WHERE UserId = @UserId";
             _dapper.ExecuteSQL(sqlUpdatePassword, new { NewPasswordHash = newPasswordHash, UserId = userId });
         }
+        public void DeletePasswordData(List<Password> resultPasswords, int userId)
+        {
+            
+                foreach (Password password in resultPasswords)
+                {
+                    string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
+                    _dapper.ExecuteSQL(sql, new { PasswordId = password.id });
+                }
+                string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
+                _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
 
+        }
+         public void DeleteUser(int id)
+        {
+            string sqlUser = "DELETE FROM dbo.Tokens WHERE UserId = @id";
 
-
+            if (!_dapper.ExecuteSQL(sqlUser, new { id }))
+            {
+                throw new Exception("Failed to delete User");
+            }
+        }
     }
 }

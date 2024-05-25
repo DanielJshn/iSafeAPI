@@ -10,28 +10,31 @@ namespace apitest;
 public class PasswordController : ControllerBase
 {
     private readonly PasswordService _passwordService;
-    private readonly CheckId _checkId;
-    private readonly ILogger<PasswordController> _logger;
 
-    public PasswordController(PasswordService passwordService, CheckId checkId, ILogger<PasswordController> logger)
+    
+    private readonly IConfiguration _config;
+
+    public PasswordController(PasswordService passwordService,  IConfiguration config)
     {
         _passwordService = passwordService;
-        _checkId = checkId;
-        _logger = logger;
+        _config = config;
+       
     }
 
     [HttpGet("GetPasswords")]
     public IActionResult GetPasswords()
     {
+        checkAuthToken();
         try
         {
-            int userId = _checkId.ValidateAndGetUserId();
+            int userId = getUserId();
+            
             List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
             return Ok(resultPasswords);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting passwords.");
+           
             return BadRequest(ex.Message);
         }
     }
@@ -39,15 +42,16 @@ public class PasswordController : ControllerBase
     [HttpPost("AddPassword")]
     public IActionResult AddPassword([FromBody] PasswordDto userInput)
     {
+        checkAuthToken();
         try
         {
-            int userId = _checkId.ValidateAndGetUserId();
+            int userId = getUserId(); 
             PasswordDto createdPassword = _passwordService.PostPassword(userId, userInput);
             return Ok(createdPassword);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while adding password.");
+           
             return BadRequest(ex.Message);
         }
     }
@@ -55,15 +59,16 @@ public class PasswordController : ControllerBase
     [HttpPut("UpdatePassword/{id}")]
     public IActionResult UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
     {
+        checkAuthToken();
         try
         {
-            _checkId.ValidateAndGetUserId(); // userId is not used, so removed the assignment
+
             PasswordDto updatedPassword = _passwordService.UpdatePassword(id, userInput);
             return Ok(updatedPassword);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while updating password.");
+            
             return BadRequest(ex.Message);
         }
     }
@@ -71,16 +76,60 @@ public class PasswordController : ControllerBase
     [HttpDelete("DeletePassword/{id}")]
     public IActionResult DeletePassword(Guid id)
     {
+        checkAuthToken();
         try
         {
-            _checkId.ValidateAndGetUserId(); // userId is not used, so removed the assignment
+
             _passwordService.DeletePassword(id);
             return Ok("Password successfully deleted");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while deleting password.");
+            
             return BadRequest(ex.Message);
         }
     }
+    private ObjectResult? checkAuthToken()
+    {
+        try
+        {
+            getUserId();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(401, ex.Message);
+        }
+        return null;
+    }
+
+    [NonAction]
+    public int getUserId()
+    {
+
+        string? accessToken = HttpContext.Request.Headers["Authorization"];
+
+        if (accessToken != null && accessToken.StartsWith("Bearer "))
+        {
+            accessToken = accessToken.Substring("Bearer ".Length);
+        }
+        accessToken = accessToken?.Trim();
+
+        int userId = 0;
+
+        string sql0 = @"SELECT UserId From dbo.Tokens Where TokenValue= '" + accessToken + "'";
+        using (SqlConnection conn = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        {
+            conn.Open();
+            SqlCommand command = new SqlCommand(sql0, conn);
+            object result = command.ExecuteScalar();
+            if (result != null)
+            {
+                userId = Convert.ToInt32(result);
+                return userId;
+            }
+            conn.Close();
+        }
+        throw new Exception("Can't get user id");
+    }
+
 }

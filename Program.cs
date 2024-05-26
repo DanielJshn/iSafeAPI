@@ -56,6 +56,7 @@ builder.Services.AddScoped<IPasswordRepository, PasswordRepository>();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AuthHelp>();
 
 
 

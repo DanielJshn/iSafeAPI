@@ -21,6 +21,7 @@ namespace apitest
             {
                 throw new Exception("password is empty");
             }
+            
             _authRepository.CheckUser(userForRegistration);
         }
 
@@ -102,6 +103,7 @@ namespace apitest
             {
                 throw new Exception("The correct user ID is not specified");
             }
+            _authRepository.DeleteUser(id);
         }
 
     }

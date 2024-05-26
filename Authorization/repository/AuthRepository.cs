@@ -24,7 +24,10 @@ namespace apitest
         {
             string sqlCheckUserExists = "SELECT email FROM dbo.Tokens WHERE email = @UserEmail";
             IEnumerable<string> existingUsers = _dapper.LoadDatatwoParam<string>(sqlCheckUserExists, new { UserEmail = userForRegistration.Email });
-
+            if (existingUsers.Any()) 
+            {
+                throw new InvalidOperationException("User with this email already exists.");
+            }
         }
 
 
@@ -132,17 +135,17 @@ namespace apitest
         }
         public void DeletePasswordData(List<Password> resultPasswords, int userId)
         {
-            
-                foreach (Password password in resultPasswords)
-                {
-                    string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
-                    _dapper.ExecuteSQL(sql, new { PasswordId = password.id });
-                }
-                string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
-                _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
+
+            foreach (Password password in resultPasswords)
+            {
+                string sql = "DELETE FROM AdditionalFields WHERE passwordId = @PasswordId";
+                _dapper.ExecuteSQL(sql, new { PasswordId = password.id });
+            }
+            string sqlPassword = "DELETE FROM Passwords WHERE UserId = @UserId";
+            _dapper.ExecuteSQL(sqlPassword, new { UserId = userId });
 
         }
-         public void DeleteUser(int id)
+        public void DeleteUser(int id)
         {
             string sqlUser = "DELETE FROM dbo.Tokens WHERE UserId = @id";
 
@@ -151,5 +154,6 @@ namespace apitest
                 throw new Exception("Failed to delete User");
             }
         }
+        
     }
 }

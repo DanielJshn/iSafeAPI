@@ -20,19 +20,22 @@ namespace apitest
     {
         // private readonly Datadapper _dapper;
         private readonly AuthHelp _authHelp;
-        PasswordRepository passwordRepository;
+        PasswordService _passwordService;
         private readonly IConfiguration _config;
         private readonly AuthService _authService;
         KeyConfig _keycon;
+        NotesService _notesService;
 
 
-        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService)
+        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService, AuthHelp authHelp, PasswordService passwordService, NotesService notesService)
         {
 
-            _authHelp = new AuthHelp(config);
+            _authHelp = authHelp;
             _config = config;
             _keycon = keycon;
             _authService = authService;
+            _passwordService = passwordService;
+            _notesService = notesService;
 
         }
 
@@ -131,11 +134,12 @@ namespace apitest
         [HttpDelete("DeleteAllData")]
         public IActionResult DeletedAllData()
         {
-            int userId = getUserId(); 
+            int userId = getUserId();
             try
             {
-                List<Password> resultPasswords = passwordRepository.GetAllPasswords(userId);
+                List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
                 _authService.DeletePasswordData(resultPasswords, userId);
+                _notesService.DeleteAllNote(userId);
                 _authService.DeleteUser(userId);
 
             }
@@ -209,7 +213,7 @@ namespace apitest
                 }
             }
         }
-        
+
         [NonAction]
         public int getUserId()
         {

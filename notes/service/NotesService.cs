@@ -61,6 +61,14 @@ namespace apitest
             }
             _noteRepository.DeleteNote(noteID);
         }
+        public void DeleteAllNote(int UserId)
+        {
+            if (UserId == 0)
+            {
+                throw new Exception("User not found");
+            }
+             _noteRepository.DeleteAllNote(UserId);
+        }
 
     }
 

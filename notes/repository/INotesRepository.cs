@@ -6,5 +6,6 @@ namespace apitest
         public NoteDto UpdateNote(Guid userId, NoteDto noteDto);
         public List<NoteResponse> GetNotes(int userId);
         public void DeleteNote(Guid noteId);
+        public void DeleteAllNote(int UserId);
     }
 }

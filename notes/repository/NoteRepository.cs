@@ -96,6 +96,17 @@ namespace apitest
             throw new Exception("Failed to delete Passwords");
          }
       }
+       public void DeleteAllNote(int UserId)
+      {
+         
+         string sqlPassword = "DELETE dbo.Note WHERE UserId = @UserID";
+
+         if (!_dapper.ExecuteSQL(sqlPassword, new { UserId }))
+         {
+            throw new Exception("Failed to delete Passwords");
+         }
+      }
+
 
    }
 }

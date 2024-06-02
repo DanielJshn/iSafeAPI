@@ -228,3 +228,13 @@ C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\refint\TestAPI.dll
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.pdb
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\TestAPI.genruntimeconfig.cache
 C:\Users\DanielDobosh\Desktop\TestAPI\obj\Debug\net7.0\ref\TestAPI.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\NUnit3.TestAdapter.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\NUnit3.TestAdapter.pdb
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\nunit.engine.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\nunit.engine.api.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\nunit.engine.core.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\testcentric.engine.metadata.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\Castle.Core.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\Moq.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\nunit.framework.dll
+C:\Users\DanielDobosh\Desktop\TestAPI\bin\Debug\net7.0\nunit.framework.legacy.dll

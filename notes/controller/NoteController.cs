@@ -103,7 +103,7 @@ public class NoteController : ControllerBase
     }
 
     [NonAction]
-    public int getUserId()
+    protected virtual int getUserId()
     {
 
         string? accessToken = HttpContext.Request.Headers["Authorization"];

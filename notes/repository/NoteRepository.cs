@@ -17,7 +17,7 @@ namespace apitest
       public NoteDto AddNote(int userId, NoteDto note)
       {
          string noteSql = @"INSERT INTO dbo.Note (UserId , id , title , description , lastEdit)
-                                    VALUES (@UserId, @Id ,@Title, @Description , @LastEdit)";
+                                    VALUES (@UserId, @id , @title, @description , @lastEdit)";
          var noteUUID = Guid.NewGuid();
          note.id = noteUUID;
          var noteParameters = new
@@ -88,25 +88,21 @@ namespace apitest
 
       public void DeleteNote(Guid noteId)
       {
-         
+
          string sqlPassword = "DELETE FROM dbo.Note WHERE id = @noteId";
 
-         if (!_dapper.ExecuteSQL(sqlPassword, new { noteId }))
-         {
-            throw new Exception("Failed to delete Passwords");
-         }
-      }
-       public void DeleteAllNote(int UserId)
-      {
+         _dapper.ExecuteSQL(sqlPassword, new { noteId });
          
+      }
+      public void DeleteAllNote(int UserId)
+      {
+
          string sqlPassword = "DELETE dbo.Note WHERE UserId = @UserID";
 
-         if (!_dapper.ExecuteSQL(sqlPassword, new { UserId }))
-         {
-            throw new Exception("Failed to delete Passwords");
-         }
+         _dapper.ExecuteSQL(sqlPassword, new { UserId });
+         
       }
 
-
-   }
+      
+    }
 }

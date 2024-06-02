@@ -13,7 +13,7 @@ namespace apitest
 
         public void CheckUser(UserForRegistrationDto userForRegistration)
         {
-           if (userForRegistration.Email == null)
+            if (userForRegistration.Email == null)
             {
                 throw new Exception("Email is empty");
             }
@@ -21,7 +21,7 @@ namespace apitest
             {
                 throw new Exception("password is empty");
             }
-            
+
             _authRepository.CheckUser(userForRegistration);
         }
 
@@ -91,7 +91,7 @@ namespace apitest
         }
         public void DeletePasswordData(List<Password> resultPasswords, int userId)
         {
-             if (userId <= 0)
+            if (userId <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }

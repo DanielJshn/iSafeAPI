@@ -1,6 +1,6 @@
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
-using api.Controllers;
+
 using apitest;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;
@@ -35,7 +35,7 @@ public class TestController : ControllerBase
     [HttpGet]
     public string Test()
     {
-        return "iSafe API v0.1";
+        return "iSafe API v2.1";
     }
 
 

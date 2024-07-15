@@ -5,16 +5,14 @@ namespace apitest
 {
    public class NoteRepository : INoteRepository
    {
+      private readonly DatadapperAsync _dapper;
 
-      private readonly Datadapper _dapper;
-
-      public NoteRepository(Datadapper dapper)
+      public NoteRepository(DatadapperAsync dapper)
       {
          _dapper = dapper;
-
       }
 
-      public NoteDto AddNote(int userId, NoteDto note)
+      public async Task<NoteDto> AddNoteAsync(int userId, NoteDto note)
       {
          string noteSql = @"INSERT INTO dbo.Note (UserId , id , title , description , lastEdit)
                                     VALUES (@UserId, @id , @title, @description , @lastEdit)";
@@ -29,31 +27,30 @@ namespace apitest
             note.lastEdit
          };
 
-         if (!_dapper.ExecuteSQL(noteSql, noteParameters))
+         var result = await _dapper.ExecuteSQLAsync(noteSql, noteParameters);
+         if (!result)
          {
             throw new Exception("Failed to add Passwords");
          }
-         var result = new NoteDto
+         var addedNote = new NoteDto
          {
             id = noteParameters.id,
             title = noteParameters.title,
             description = noteParameters.description,
             lastEdit = noteParameters.lastEdit
          };
-         return result;
+         return addedNote;
       }
 
-      public List<NoteResponse> GetNotes(int userId)
+      public async Task<List<NoteResponse>> GetNotesAsync(int userId)
       {
          string sql = @"SELECT * FROM dbo.Note WHERE UserId = @userId";
-         IEnumerable<NoteResponse> passwords = _dapper.LoadDatatwoParam<NoteResponse>(sql, new { userId });
+         IEnumerable<NoteResponse> notes = await _dapper.LoadDatatwoParamAsync<NoteResponse>(sql, new { userId });
 
-         List<NoteResponse> resultPasswords = passwords.ToList();
-
-         return resultPasswords;
+         return notes.ToList();
       }
 
-      public NoteDto UpdateNote(Guid noteId, NoteDto noteDto)
+      public async Task<NoteDto> UpdateNoteAsync(Guid noteId, NoteDto noteDto)
       {
          string updateNoteQuery = @"
                     UPDATE dbo.Note 
@@ -68,12 +65,13 @@ namespace apitest
             noteDto.lastEdit
          };
 
-         if (!_dapper.ExecuteSQL(updateNoteQuery, noteParameters))
+         var result = await _dapper.ExecuteSQLAsync(updateNoteQuery, noteParameters);
+         if (!result)
          {
             throw new Exception("Failed to update note");
          }
 
-         var result = new NoteDto
+         var updatedNote = new NoteDto
          {
             id = noteId,
             title = noteDto.title,
@@ -81,28 +79,19 @@ namespace apitest
             lastEdit = noteDto.lastEdit
          };
 
-         return result;
+         return updatedNote;
       }
 
-
-
-      public void DeleteNote(Guid noteId)
+      public async Task DeleteNoteAsync(Guid noteId)
       {
-
          string sqlPassword = "DELETE FROM dbo.Note WHERE id = @noteId";
-
-         _dapper.ExecuteSQL(sqlPassword, new { noteId });
-         
+         await _dapper.ExecuteSQLAsync(sqlPassword, new { noteId });
       }
-      public void DeleteAllNote(int UserId)
+
+      public async Task DeleteAllNoteAsync(int UserId)
       {
-
          string sqlPassword = "DELETE dbo.Note WHERE UserId = @UserID";
-
-         _dapper.ExecuteSQL(sqlPassword, new { UserId });
-         
+         await _dapper.ExecuteSQLAsync(sqlPassword, new { UserId });
       }
-
-      
-    }
+   }
 }

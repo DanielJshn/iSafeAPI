@@ -3,9 +3,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace apitest
 {
 
-    public class NotesService
+    public class NotesService : INotesService
     {
-
         private readonly INoteRepository _noteRepository;
 
         public NotesService(INoteRepository noteRepository)
@@ -13,63 +12,70 @@ namespace apitest
             _noteRepository = noteRepository;
         }
 
-        public NoteDto AddNote(int userId, NoteDto note)
+        public async Task<NoteDto> AddNoteAsync(int userId, NoteDto note)
         {
-            if (note.title.IsNullOrEmpty())
+            if (note == null)
+            {
+                throw new Exception("Note data is null!");
+            }
+            if (string.IsNullOrEmpty(note.title))
             {
                 throw new Exception("Title is empty!");
             }
-            if (note.description.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(note.description))
             {
                 throw new Exception("Description is empty!");
             }
-            return _noteRepository.AddNote(userId, note);
+            return await _noteRepository.AddNoteAsync(userId, note);
         }
 
-        public List<NoteResponse> GetNotes(int userId)
+        public async Task<List<NoteResponse>> GetNotesAsync(int userId)
         {
             if (userId == 0)
             {
                 throw new Exception("User not found");
             }
-            return _noteRepository.GetNotes(userId);
+            return await _noteRepository.GetNotesAsync(userId);
         }
 
-        public NoteDto UpdateNote(Guid noteID, NoteDto noteDto)
+        public async Task<NoteDto> UpdateNoteAsync(Guid noteID, NoteDto noteDto)
         {
+            if (noteDto == null)
+            {
+                throw new Exception("Note data is null");
+            }
             if (noteID == Guid.Empty)
             {
                 throw new Exception("Note not found");
             }
-            if (noteDto.title.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(noteDto.title))
             {
                 throw new Exception("Title is empty!");
             }
-            if (noteDto.description.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(noteDto.description))
             {
                 throw new Exception("Description is empty!");
             }
-            return _noteRepository.UpdateNote(noteID, noteDto);
+            return await _noteRepository.UpdateNoteAsync(noteID, noteDto);
         }
 
-
-        public void DeleteNote(Guid noteID)
+        public async Task DeleteNoteAsync(Guid noteID)
         {
             if (noteID == Guid.Empty)
             {
                 throw new Exception("Note not found");
             }
-            _noteRepository.DeleteNote(noteID);
+            await _noteRepository.DeleteNoteAsync(noteID);
         }
-        public void DeleteAllNote(int UserId)
+
+        public async Task DeleteAllNoteAsync(int UserId)
         {
             if (UserId == 0)
             {
                 throw new Exception("User not found");
             }
-             _noteRepository.DeleteAllNote(UserId);
+            await _noteRepository.DeleteAllNoteAsync(UserId);
         }
-
     }
 
 }

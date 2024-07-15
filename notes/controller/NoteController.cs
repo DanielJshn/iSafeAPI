@@ -10,26 +10,24 @@ namespace apitest;
 [Route("[controller]")]
 public class NoteController : ControllerBase
 {
-
-    private readonly NotesService _notesService;
+    private readonly INotesService _notesService;
     private readonly IConfiguration _config;
 
-    public NoteController(IConfiguration config, NotesService notesService)
+    public NoteController(IConfiguration config, INotesService notesService)
     {
         _config = config;
         _notesService = notesService;
     }
 
     [HttpPost("AddNote")]
-    public IActionResult AddNote(NoteDto note)
+    public async Task<IActionResult> AddNote(NoteDto note)
     {
-
         checkAuthToken();
         int userId = getUserId();
         NoteDto CreatedNote;
         try
         {
-            CreatedNote = _notesService.AddNote(userId, note);
+            CreatedNote = await _notesService.AddNoteAsync(userId, note);
         }
         catch (Exception ex)
         {
@@ -40,14 +38,14 @@ public class NoteController : ControllerBase
     }
 
     [HttpGet("GetNote")]
-    public IActionResult GetNote()
+    public async Task<IActionResult> GetNote()
     {
         checkAuthToken();
         int userId = getUserId();
         List<NoteResponse> notes;
         try
         {
-            notes = _notesService.GetNotes(userId);
+            notes = await _notesService.GetNotesAsync(userId);
         }
         catch (Exception ex)
         {
@@ -57,13 +55,13 @@ public class NoteController : ControllerBase
     }
 
     [HttpPut("UpdateData/{id}")]
-    public IActionResult UpdateData(Guid id, [FromBody] NoteDto userInput)
+    public async Task<IActionResult> UpdateData(Guid id, [FromBody] NoteDto userInput)
     {
         checkAuthToken();
         NoteDto updateData;
         try
         {
-            updateData = _notesService.UpdateNote(id, userInput);
+            updateData = await _notesService.UpdateNoteAsync(id, userInput);
         }
         catch (Exception ex)
         {
@@ -72,22 +70,22 @@ public class NoteController : ControllerBase
         return Ok(updateData);
     }
 
-
     [HttpDelete("DeleteData/{id}")]
-    public IActionResult DeleteData(Guid id)
+    public async Task<IActionResult> DeleteData(Guid id)
     {
         checkAuthToken();
         try
         {
-            _notesService.DeleteNote(id);
+            await _notesService.DeleteNoteAsync(id);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
         return Ok("User successfully deleted");
-
     }
+
+
 
     private ObjectResult? checkAuthToken()
     {

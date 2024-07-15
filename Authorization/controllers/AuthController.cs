@@ -24,10 +24,10 @@ namespace apitest
         private readonly IConfiguration _config;
         private readonly AuthService _authService;
         KeyConfig _keycon;
-        NotesService _notesService;
+        INotesService _notesService;
 
 
-        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService, AuthHelp authHelp, PasswordService passwordService, NotesService notesService)
+        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService, AuthHelp authHelp, PasswordService passwordService, INotesService notesService)
         {
 
             _authHelp = authHelp;
@@ -139,7 +139,7 @@ namespace apitest
             {
                 List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
                 _authService.DeletePasswordData(resultPasswords, userId);
-                _notesService.DeleteAllNote(userId);
+                _notesService.DeleteAllNoteAsync(userId);
                 _authService.DeleteUser(userId);
 
             }

@@ -50,8 +50,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 });
 
 builder.Services.AddScoped<Datadapper>();
+builder.Services.AddScoped<DatadapperAsync>();
 builder.Services.AddScoped<INoteRepository, NoteRepository>();
-builder.Services.AddScoped<NotesService>();
+builder.Services.AddScoped<INotesService , NotesService>();
 builder.Services.AddScoped<IPasswordRepository, PasswordRepository>();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();

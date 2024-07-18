@@ -20,14 +20,14 @@ namespace apitest
     {
         // private readonly Datadapper _dapper;
         private readonly AuthHelp _authHelp;
-        PasswordService _passwordService;
+        private readonly IPasswordService _passwordService;
         private readonly IConfiguration _config;
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         KeyConfig _keycon;
         INotesService _notesService;
 
 
-        public AuthController(IConfiguration config, KeyConfig keycon, AuthService authService, AuthHelp authHelp, PasswordService passwordService, INotesService notesService)
+        public AuthController(IConfiguration config, KeyConfig keycon, IAuthService authService, AuthHelp authHelp, IPasswordService passwordService, INotesService notesService)
         {
 
             _authHelp = authHelp;
@@ -42,9 +42,9 @@ namespace apitest
 
         [AllowAnonymous]
         [HttpPost("Register")]
-        public IActionResult Register(UserForRegistrationDto userForRegistration)
+        public async Task<IActionResult> Register(UserForRegistrationDto userForRegistration)
         {
-            string token;
+           string token;
 
 
             string secretKey = _keycon.GetSecretKey();
@@ -57,8 +57,8 @@ namespace apitest
 
             try
             {
-                _authService.CheckUser(userForRegistration);
-                token = _authService.RegistrEndInsert(userForRegistration);
+               await _authService.CheckUserAsync(userForRegistration);
+                token = await _authService.RegistrEndInsertAsync(userForRegistration);
             }
             catch (Exception ex)
             {
@@ -66,17 +66,15 @@ namespace apitest
             }
             return Ok(new { Token = token });
         }
-
-
+        
 
         [AllowAnonymous]
         [HttpPost("Login")]
-        public IActionResult Login(UserForLoginDto userForLogin)
+        public async Task<IActionResult> Login(UserForLoginDto userForLogin)
         {
             string newToken;
             try
             {
-
                 string secretKey = _keycon.GetSecretKey();
 
                 string decryptedEmail = DecryptStringAES(userForLogin.Email, secretKey);
@@ -85,16 +83,16 @@ namespace apitest
                 userForLogin.Email = decryptedEmail;
                 userForLogin.Password = decryptedPassword;
 
-                string token = _authService.CheckEmail(userForLogin);
-                _authService.CheckPassword(userForLogin);
-                int userId = _authHelp.GetUserIdFromToken(token);
+                string token = await _authService.CheckEmailAsync(userForLogin);
+                await _authService.CheckPasswordAsync(userForLogin);
+                int userId =  _authHelp.GetUserIdFromToken(token);
                 if (userId == 0)
                 {
-                    return BadRequest("Can not find this user");
+                    return BadRequest("Cannot find this user");
                 }
                 newToken = _authHelp.GenerateNewToken(userId);
 
-                bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
+                bool tokenUpdated =  _authHelp.UpdateTokenValueInDatabase(userId, newToken);
             }
             catch (Exception ex)
             {
@@ -103,9 +101,8 @@ namespace apitest
             return Ok(new { Token = newToken });
         }
 
-
         [HttpGet("RefreshToken")]
-        public IActionResult RefreshToken()
+        public async Task<IActionResult> RefreshToken()
         {
             string? refreshToken = HttpContext.Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(refreshToken) || !refreshToken.StartsWith("Bearer "))
@@ -120,8 +117,8 @@ namespace apitest
                 return BadRequest("Invalid Refresh Token");
             }
 
-            string newToken = _authHelp.GenerateNewToken(userId);
-            bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
+            string newToken =  _authHelp.GenerateNewToken(userId);
+            bool tokenUpdated =  _authHelp.UpdateTokenValueInDatabase(userId, newToken);
             if (!tokenUpdated)
             {
                 return StatusCode(500, "Failed to update token in the database");
@@ -130,18 +127,16 @@ namespace apitest
             return Ok(new { Token = newToken });
         }
 
-
         [HttpDelete("DeleteAllData")]
-        public IActionResult DeletedAllData()
+        public async Task<IActionResult> DeletedAllData()
         {
             int userId = getUserId();
             try
             {
-                List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
-                _authService.DeletePasswordData(resultPasswords, userId);
-                _notesService.DeleteAllNoteAsync(userId);
-                _authService.DeleteUser(userId);
-
+                List<Password> resultPasswords = await _passwordService.GetAllPasswordsAsync(userId);
+                await _authService.DeletePasswordDataAsync(resultPasswords, userId);
+                await _notesService.DeleteAllNoteAsync(userId);
+                await _authService.DeleteUserAsync(userId);
             }
             catch (Exception ex)
             {
@@ -150,11 +145,9 @@ namespace apitest
             return Ok("Account deleted");
         }
 
-
         [HttpPut("ChangePassword")]
-        public IActionResult ChangePassword(UserForChangePassword userForLogin)
+        public async Task<IActionResult> ChangePassword(UserForChangePassword userForLogin)
         {
-
             int userId = getUserId();
             try
             {
@@ -164,8 +157,8 @@ namespace apitest
                 userForLogin.Password = decryptedPassword;
                 userForLogin.NewPassword = decryptedNewPassword;
 
-                byte[] passwordSalt = _authService.GetSaltForUserId(userId);
-                byte[] oldPasswordHash = _authService.GetHashForUserId(userId);
+                byte[] passwordSalt = await _authService.GetSaltForUserIdAsync(userId);
+                byte[] oldPasswordHash = await _authService.GetHashForUserIdAsync(userId);
 
                 byte[] passwordConfirmationHash = _authHelp.GetPasswordHash(userForLogin.Password, passwordSalt);
 
@@ -174,11 +167,11 @@ namespace apitest
                     throw new Exception("Current password is incorrect");
                 }
 
-                byte[] newPasswordHash = _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
+                byte[] newPasswordHash =  _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
 
-                _authService.ChangeUserPassword(userId, newPasswordHash);
+                await _authService.ChangeUserPasswordAsync(userId, newPasswordHash);
 
-                return Ok("Password successfully Changed");
+                return Ok("Password successfully changed");
             }
             catch (Exception ex)
             {
@@ -187,8 +180,8 @@ namespace apitest
         }
 
 
-        [NonAction]
-        static string DecryptStringAES(string cipherText, string key)
+         [NonAction]
+         static string DecryptStringAES(string cipherText, string key)
         {
             byte[] cipherBytes = Convert.FromBase64String(cipherText);
 

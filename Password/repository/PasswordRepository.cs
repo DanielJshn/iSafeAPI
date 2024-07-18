@@ -8,24 +8,24 @@ namespace apitest
 {
     public class PasswordRepository : IPasswordRepository
     {
-        private readonly Datadapper _dapper;
+        private readonly DatadapperAsync _dapper;
 
-        public PasswordRepository(Datadapper dapper)
+        public PasswordRepository(DatadapperAsync dapper)
         {
             _dapper = dapper;
         }
 
-        public List<Password> GetAllPasswords(int userId)
+        public async Task<List<Password>> GetAllPasswords(int userId)
         {
             string sql = @"SELECT * FROM dbo.Passwords WHERE UserId = @userId";
-            IEnumerable<Password> passwords = _dapper.LoadDatatwoParam<Password>(sql, new { userId });
+            IEnumerable<Password> passwords = await _dapper.LoadDatatwoParamAsync<Password>(sql, new { userId });
 
             List<Password> resultPasswords = new List<Password>();
 
             foreach (var password in passwords)
             {
                 string sql2 = @"SELECT * FROM dbo.AdditionalFields WHERE passwordId = @passwordId";
-                IEnumerable<AdditionalField> additionalFields = _dapper.LoadDatatwoParam<AdditionalField>(sql2, new { passwordId = password.id });
+                IEnumerable<AdditionalField> additionalFields = await _dapper.LoadDatatwoParamAsync<AdditionalField>(sql2, new { passwordId = password.id });
                 password.additionalFields = additionalFields.ToList();
                 resultPasswords.Add(password);
             }
@@ -33,12 +33,12 @@ namespace apitest
             return resultPasswords;
         }
 
-        public PasswordDto UpdatePassword(Guid id, PasswordDto userInput)
+        public async Task<PasswordDto> UpdatePassword(Guid id, PasswordDto userInput)
         {
             string updatePasswordQuery = @"
-                        UPDATE dbo.Passwords 
-                        SET password = @password, id = @id, organization = @organization, title = @title, lastEdit = @lastEdit
-                        WHERE id = @id";
+                UPDATE dbo.Passwords 
+                SET password = @password, id = @id, organization = @organization, title = @title, lastEdit = @lastEdit
+                WHERE id = @id";
             userInput.id = id;
             var passwordParameters = new
             {
@@ -48,26 +48,27 @@ namespace apitest
                 userInput.title,
                 userInput.lastEdit
             };
-
-            if (!_dapper.ExecuteSQL(updatePasswordQuery, passwordParameters))
+            var result = await _dapper.ExecuteSQLAsync(updatePasswordQuery, passwordParameters);
+            if (!result)
             {
                 throw new Exception("Failed to update Passwords");
             }
 
             string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
-            var count = _dapper.LoadDatatwoParam<int>(countQuery, new { id }).FirstOrDefault();
+            var countResult = await _dapper.LoadDatatwoParamAsync<int>(countQuery, new { id });
+            var count = countResult.FirstOrDefault();
 
             if (count > 0)
             {
                 string sqlAdditional = "DELETE FROM dbo.AdditionalFields WHERE passwordId = @id";
-                _dapper.ExecuteSQL(sqlAdditional, new { id });
+                await _dapper.ExecuteSQLAsync(sqlAdditional, new { id });
             }
 
             foreach (var additionalField in userInput.additionalFields)
             {
                 string additionalFieldSql = @"
-                INSERT INTO dbo.AdditionalFields (passwordId, id, title, [value])  
-                VALUES (@passwordId, @id, @title, @value)";
+            INSERT INTO dbo.AdditionalFields (passwordId, id, title, [value])  
+            VALUES (@passwordId, @id, @title, @value)";
 
                 var addFieldUUID = Guid.NewGuid();
                 additionalField.id = addFieldUUID;
@@ -80,13 +81,13 @@ namespace apitest
                     additionalField.value
                 };
 
-                if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
+                if (!await _dapper.ExecuteSQLAsync(additionalFieldSql, fieldParameters))
                 {
                     throw new Exception("Failed to add AdditionalField");
                 }
             }
 
-            var result = new PasswordDto
+            var resultDto = new PasswordDto
             {
                 id = userInput.id,
                 password = userInput.password,
@@ -94,18 +95,19 @@ namespace apitest
                 title = userInput.title,
                 lastEdit = userInput.lastEdit,
                 additionalFields = userInput.additionalFields
-               .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
-               .ToList()
+                    .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
+                    .ToList()
             };
 
-            return result;
+            return resultDto;
         }
 
-        public PasswordDto PostPassword(int userId, PasswordDto passwordInput)
+
+        public async Task<PasswordDto> PostPassword(int userId, PasswordDto passwordInput)
         {
             string passwordSql = @"
-                INSERT INTO dbo.Passwords (UserId, id, password, organization, title, lastEdit)
-                VALUES (@UserId, @Id, @Password, @Organization, @Title, @LastEdit)";
+        INSERT INTO dbo.Passwords (UserId, id, password, organization, title, lastEdit)
+        VALUES (@UserId, @Id, @Password, @Organization, @Title, @LastEdit)";
 
             var passwordUUID = Guid.NewGuid();
             passwordInput.id = passwordUUID;
@@ -120,7 +122,8 @@ namespace apitest
                 passwordInput.lastEdit
             };
 
-            if (!_dapper.ExecuteSQL(passwordSql, passwordParameters))
+            bool passwordInserted = await _dapper.ExecuteSQLAsync(passwordSql, passwordParameters);
+            if (!passwordInserted)
             {
                 throw new Exception("Failed to add Passwords");
             }
@@ -128,8 +131,8 @@ namespace apitest
             foreach (var additionalField in passwordInput.additionalFields)
             {
                 string additionalFieldSql = @"
-                INSERT INTO dbo.AdditionalFields (passwordId, id, title, [value])  
-                VALUES (@passwordId, @id, @title, @value)";
+        INSERT INTO dbo.AdditionalFields (passwordId, id, title, [value])  
+        VALUES (@passwordId, @id, @title, @value)";
 
                 var addFieldUUID = Guid.NewGuid();
                 additionalField.id = addFieldUUID;
@@ -142,7 +145,8 @@ namespace apitest
                     additionalField.value
                 };
 
-                if (!_dapper.ExecuteSQL(additionalFieldSql, fieldParameters))
+                bool fieldInserted = await _dapper.ExecuteSQLAsync(additionalFieldSql, fieldParameters);
+                if (!fieldInserted)
                 {
                     throw new Exception("Failed to add AdditionalField");
                 }
@@ -156,30 +160,33 @@ namespace apitest
                 title = passwordInput.title,
                 lastEdit = passwordInput.lastEdit,
                 additionalFields = passwordInput.additionalFields
-                .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
-                .ToList()
+                    .Where(field => !string.IsNullOrEmpty(field.title) || !string.IsNullOrEmpty(field.value))
+                    .ToList()
             };
 
             return result;
         }
 
-        public void DeletePassword(Guid id)
+
+        public async Task DeletePassword(Guid id)
         {
             string countQuery = "SELECT COUNT(*) FROM dbo.AdditionalFields WHERE passwordId = @id";
-            var count = _dapper.LoadDatatwoParam<int>(countQuery, new { id }).FirstOrDefault();
+            var count = (await _dapper.LoadDatatwoParamAsync<int>(countQuery, new { id })).FirstOrDefault();
 
             if (count > 0)
             {
                 string sqlAdditional = "DELETE FROM dbo.AdditionalFields WHERE passwordId = @id";
-                _dapper.ExecuteSQL(sqlAdditional, new { id });
+                await _dapper.ExecuteSQLAsync(sqlAdditional, new { id });
             }
 
             string sqlPassword = "DELETE FROM dbo.Passwords WHERE id = @id";
 
-            if (!_dapper.ExecuteSQL(sqlPassword, new { id }))
+            bool passwordDeleted = await _dapper.ExecuteSQLAsync(sqlPassword, new { id });
+            if (!passwordDeleted)
             {
                 throw new Exception("Failed to delete Passwords");
             }
         }
+
     }
 }

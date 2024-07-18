@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
-using NUnit.Framework.Legacy;
+
 namespace apitest
 {
    [TestFixture]
@@ -34,9 +34,9 @@ public class NoteControllerTests
         var result = await _controller!.AddNote(noteDto) as OkObjectResult;
 
         // Assert
-        ClassicAssert.IsNotNull(result);
-        ClassicAssert.AreEqual(200, result?.StatusCode);
-        ClassicAssert.AreEqual(createdNoteDto, result?.Value);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(200, result?.StatusCode);
+        Assert.AreEqual(createdNoteDto, result?.Value);
     }
 
     [Test]
@@ -51,9 +51,9 @@ public class NoteControllerTests
         var result = await _controller!.AddNote(noteDto) as BadRequestObjectResult;
 
         // Assert
-        ClassicAssert.IsNotNull(result);
-        ClassicAssert.AreEqual(400, result?.StatusCode);
-        ClassicAssert.AreEqual("Error adding note", result?.Value);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(400, result?.StatusCode);
+        Assert.AreEqual("Error adding note", result?.Value);
     }
 
     [Test]
@@ -72,9 +72,9 @@ public class NoteControllerTests
         var result = await _controller!.GetNote() as OkObjectResult;
 
         // Assert
-        ClassicAssert.IsNotNull(result);
-        ClassicAssert.AreEqual(200, result?.StatusCode);
-        ClassicAssert.AreEqual(notes, result?.Value);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(200, result?.StatusCode);
+        Assert.AreEqual(notes, result?.Value);
     }
 
     [Test]
@@ -87,8 +87,8 @@ public class NoteControllerTests
         var result = await _controller!.GetNote() as BadRequestObjectResult;
 
         // Assert
-        ClassicAssert.IsNotNull(result);
-        ClassicAssert.AreEqual(400, result?.StatusCode);
-        ClassicAssert.AreEqual("Error retrieving notes", result?.Value);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(400, result?.StatusCode);
+        Assert.AreEqual("Error retrieving notes", result?.Value);
     }
 }}

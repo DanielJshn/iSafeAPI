@@ -1,6 +1,6 @@
 namespace apitest
 {
-    public interface IAuthRepository
+    public interface IAuthService
     {
         Task CheckUserAsync(UserForRegistrationDto userForRegistration);
         Task<string> RegistrEndInsertAsync(UserForRegistrationDto userForRegistration);
@@ -12,5 +12,4 @@ namespace apitest
         Task DeletePasswordDataAsync(List<Password> resultPasswords, int userId);
         Task DeleteUserAsync(int id);
     }
-
 }

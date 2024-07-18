@@ -9,83 +9,73 @@ namespace apitest;
 [Route("[controller]")]
 public class PasswordController : ControllerBase
 {
-    private readonly PasswordService _passwordService;
-
-    
+    private readonly IPasswordService _passwordService;
     private readonly IConfiguration _config;
 
-    public PasswordController(PasswordService passwordService,  IConfiguration config)
+    public PasswordController(IPasswordService passwordService, IConfiguration config)
     {
         _passwordService = passwordService;
         _config = config;
-       
     }
 
     [HttpGet("GetPasswords")]
-    public IActionResult GetPasswords()
+    public async Task<IActionResult> GetPasswords()
     {
         checkAuthToken();
         try
         {
             int userId = getUserId();
-            
-            List<Password> resultPasswords = _passwordService.GetAllPasswords(userId);
+            List<Password> resultPasswords = await _passwordService.GetAllPasswordsAsync(userId);
             return Ok(resultPasswords);
         }
         catch (Exception ex)
         {
-           
             return BadRequest(ex.Message);
         }
     }
 
     [HttpPost("AddPassword")]
-    public IActionResult AddPassword([FromBody] PasswordDto userInput)
+    public async Task<IActionResult> AddPassword([FromBody] PasswordDto userInput)
     {
         checkAuthToken();
         try
         {
-            int userId = getUserId(); 
-            PasswordDto createdPassword = _passwordService.PostPassword(userId, userInput);
+            int userId = getUserId();
+            PasswordDto createdPassword = await _passwordService.PostPasswordAsync(userId, userInput);
             return Ok(createdPassword);
         }
         catch (Exception ex)
         {
-           
             return BadRequest(ex.Message);
         }
     }
 
     [HttpPut("UpdatePassword/{id}")]
-    public IActionResult UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
+    public async Task<IActionResult> UpdatePassword(Guid id, [FromBody] PasswordDto userInput)
     {
         checkAuthToken();
         try
         {
-
-            PasswordDto updatedPassword = _passwordService.UpdatePassword(id, userInput);
+            PasswordDto updatedPassword = await _passwordService.UpdatePasswordAsync(id, userInput);
             return Ok(updatedPassword);
         }
         catch (Exception ex)
         {
-            
             return BadRequest(ex.Message);
         }
     }
 
     [HttpDelete("DeletePassword/{id}")]
-    public IActionResult DeletePassword(Guid id)
+    public async Task<IActionResult> DeletePassword(Guid id)
     {
         checkAuthToken();
         try
         {
-
-            _passwordService.DeletePassword(id);
+            await _passwordService.DeletePasswordAsync(id);
             return Ok("Password successfully deleted");
         }
         catch (Exception ex)
         {
-            
             return BadRequest(ex.Message);
         }
     }

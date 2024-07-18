@@ -3,9 +3,10 @@ namespace apitest
 {
     public interface IPasswordRepository
     {
-        List<Password> GetAllPasswords(int userId);
-        PasswordDto UpdatePassword(Guid id, PasswordDto userInput);
-        PasswordDto PostPassword(int userId, PasswordDto passwordInput);
-        void DeletePassword(Guid id);
+        Task<List<Password>> GetAllPasswords(int userId);
+        Task<PasswordDto> UpdatePassword(Guid id, PasswordDto userInput);
+        Task<PasswordDto> PostPassword(int userId, PasswordDto passwordInput);
+        Task DeletePassword(Guid id);
     }
+
 }

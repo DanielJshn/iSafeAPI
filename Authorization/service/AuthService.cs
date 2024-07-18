@@ -1,9 +1,8 @@
 namespace apitest
 {
 
-    public class AuthService
+    public class AuthService : IAuthService
     {
-
         private readonly IAuthRepository _authRepository;
 
         public AuthService(IAuthRepository authRepository)
@@ -11,100 +10,109 @@ namespace apitest
             _authRepository = authRepository;
         }
 
-        public void CheckUser(UserForRegistrationDto userForRegistration)
+        public async Task CheckUserAsync(UserForRegistrationDto userForRegistration)
         {
-            if (userForRegistration.Email == null)
+            if (string.IsNullOrEmpty(userForRegistration.Email))
             {
                 throw new Exception("Email is empty");
             }
-            if (userForRegistration.Password == null)
+            if (string.IsNullOrEmpty(userForRegistration.Password))
             {
-                throw new Exception("password is empty");
+                throw new Exception("Password is empty");
             }
 
-            _authRepository.CheckUser(userForRegistration);
+            await _authRepository.CheckUserAsync(userForRegistration);
         }
 
-        public string RegistrEndInsert(UserForRegistrationDto userForRegistration)
+        public async Task<string> RegistrEndInsertAsync(UserForRegistrationDto userForRegistration)
         {
-            if (userForRegistration.Email == null)
+            if (string.IsNullOrEmpty(userForRegistration.Email))
             {
                 throw new Exception("Email is empty");
             }
-            if (userForRegistration.Password == null)
+            if (string.IsNullOrEmpty(userForRegistration.Password))
             {
-                throw new Exception("password is empty");
+                throw new Exception("Password is empty");
             }
-            return _authRepository.RegistrEndInsert(userForRegistration);
+            return await _authRepository.RegistrEndInsertAsync(userForRegistration);
         }
-        public string CheckEmail(UserForLoginDto userForLogin)
+
+        public async Task<string> CheckEmailAsync(UserForLoginDto userForLogin)
         {
-            if (userForLogin.Email == null)
+            if (string.IsNullOrEmpty(userForLogin.Email))
             {
                 throw new Exception("Email is empty");
             }
-            if (userForLogin.Password == null)
+            if (string.IsNullOrEmpty(userForLogin.Password))
             {
-                throw new Exception("password is empty");
+                throw new Exception("Password is empty");
             }
-            return _authRepository.CheckEmail(userForLogin);
+            return await _authRepository.CheckEmailAsync(userForLogin);
         }
-        public void CheckPassword(UserForLoginDto userForLogin)
+
+        public async Task CheckPasswordAsync(UserForLoginDto userForLogin)
         {
-            if (userForLogin.Email == null)
+            if (string.IsNullOrEmpty(userForLogin.Email))
             {
                 throw new Exception("Email is empty");
             }
-            if (userForLogin.Password == null)
+            if (string.IsNullOrEmpty(userForLogin.Password))
             {
-                throw new Exception("password is empty");
+                throw new Exception("Password is empty");
             }
-            _authRepository.CheckPassword(userForLogin);
+            await _authRepository.CheckPasswordAsync(userForLogin);
         }
-        public byte[]? GetSaltForUserId(int userId)
+
+        public async Task<byte[]?> GetSaltForUserIdAsync(int userId)
         {
             if (userId <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }
-            return _authRepository.GetSaltForUserId(userId);
+            return await _authRepository.GetSaltForUserIdAsync(userId);
         }
-        public byte[]? GetHashForUserId(int userId)
+
+        public async Task<byte[]?> GetHashForUserIdAsync(int userId)
         {
             if (userId <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }
-            return _authRepository.GetHashForUserId(userId);
+            return await _authRepository.GetHashForUserIdAsync(userId);
         }
-        public void ChangeUserPassword(int userId, byte[] newPasswordHash)
+
+        public async Task ChangeUserPasswordAsync(int userId, byte[] newPasswordHash)
         {
             if (userId <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }
-            if (newPasswordHash == null)
+            if (newPasswordHash == null || newPasswordHash.Length == 0)
             {
-                throw new Exception("PasswordHash is Null");
+                throw new Exception("PasswordHash is null or empty");
             }
-            _authRepository.ChangeUserPassword(userId, newPasswordHash);
+            await _authRepository.ChangeUserPasswordAsync(userId, newPasswordHash);
         }
-        public void DeletePasswordData(List<Password> resultPasswords, int userId)
+
+        public async Task DeletePasswordDataAsync(List<Password> resultPasswords, int userId)
         {
             if (userId <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }
-            _authRepository.DeletePasswordData(resultPasswords, userId);
+            await _authRepository.DeletePasswordDataAsync(resultPasswords, userId);
         }
-        public void DeleteUser(int id)
+
+        public async Task DeleteUserAsync(int id)
         {
             if (id <= 0)
             {
                 throw new Exception("The correct user ID is not specified");
             }
-            _authRepository.DeleteUser(id);
+            await _authRepository.DeleteUserAsync(id);
         }
-
     }
+
+
 }
+

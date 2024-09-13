@@ -20,4 +20,9 @@ using apitest;
     {
         return _config["AuthSecretKey"];
     }
+
+    public string GetIV()
+    {
+        return _config["Vector"];
+    }
 }

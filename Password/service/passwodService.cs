@@ -2,7 +2,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace apitest
 {
-    public class PasswordService 
+    public class PasswordService : IPasswordService
     {
         private readonly IPasswordRepository _passwordRepository;
 
@@ -11,24 +11,24 @@ namespace apitest
             _passwordRepository = passwordRepository;
         }
 
-        public List<Password> GetAllPasswords(int userId)
+        public async Task<List<Password>> GetAllPasswordsAsync(int userId)
         {
             if (userId == 0)
             {
                 throw new Exception("User not found");
             }
 
-            var passwords = _passwordRepository.GetAllPasswords(userId);
+            var passwords = await _passwordRepository.GetAllPasswords(userId);
 
             if (passwords == null || !passwords.Any())
             {
                 return new List<Password>();
             }
 
-            return _passwordRepository.GetAllPasswords(userId);
+            return passwords;
         }
 
-        public PasswordDto UpdatePassword(Guid id, PasswordDto userInput)
+        public async Task<PasswordDto> UpdatePasswordAsync(Guid id, PasswordDto userInput)
         {
             if (id == Guid.Empty)
             {
@@ -50,10 +50,10 @@ namespace apitest
                 throw new Exception("Password is empty");
             }
 
-            return _passwordRepository.UpdatePassword(id, userInput);
+            return await _passwordRepository.UpdatePassword(id, userInput);
         }
 
-        public PasswordDto PostPassword(int userId, PasswordDto passwordInput)
+        public async Task<PasswordDto> PostPasswordAsync(int userId, PasswordDto passwordInput)
         {
             if (userId == 0)
             {
@@ -75,17 +75,17 @@ namespace apitest
                 throw new Exception("Password is empty");
             }
 
-            return _passwordRepository.PostPassword(userId, passwordInput);
+            return await _passwordRepository.PostPassword(userId, passwordInput);
         }
 
-        public void DeletePassword(Guid id)
+        public async Task DeletePasswordAsync(Guid id)
         {
             if (id == Guid.Empty)
             {
                 throw new Exception("Invalid id");
             }
 
-            _passwordRepository.DeletePassword(id);
+            await _passwordRepository.DeletePassword(id);
         }
     }
 }

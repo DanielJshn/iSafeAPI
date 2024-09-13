@@ -163,6 +163,7 @@ namespace apitest
             return Ok(new { Token = newToken });
         }
 
+
         [HttpDelete("DeleteAllData")]
         public async Task<IActionResult> DeletedAllData()
         {
@@ -180,6 +181,7 @@ namespace apitest
             }
             return Ok("Account deleted");
         }
+        
 
         [HttpPut("ChangePassword")]
         public async Task<IActionResult> ChangePassword(UserForChangePassword userForLogin)

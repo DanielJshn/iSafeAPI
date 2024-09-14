@@ -117,7 +117,6 @@ namespace apitest
             {
                 accessToken = accessToken.Substring("Bearer ".Length);
             }
-
             accessToken = accessToken?.Trim();
 
             string sql = @"SELECT UserId FROM dbo.Tokens WHERE TokenValue = @AccessToken";

@@ -19,7 +19,7 @@ namespace apitest
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        // private readonly Datadapper _dapper;
+        
         private readonly AuthHelp _authHelp;
         private readonly IPasswordService _passwordService;
         private readonly IConfiguration _config;

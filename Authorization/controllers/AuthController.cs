@@ -84,7 +84,6 @@ namespace apitest
             string decryptedEmail = DecryptStringAES(userForRegistration.Email, base64Key, base64IV);
             string decryptedPassword = DecryptStringAES(userForRegistration.Password, base64Key, base64IV);
 
-
             userForRegistration.Email = decryptedEmail;
             userForRegistration.Password = decryptedPassword;
 

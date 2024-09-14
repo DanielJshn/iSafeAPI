@@ -19,7 +19,6 @@ namespace apitest
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        
         private readonly AuthHelp _authHelp;
         private readonly IPasswordService _passwordService;
         private readonly IConfiguration _config;

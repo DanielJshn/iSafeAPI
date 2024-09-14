@@ -7,6 +7,8 @@ Here is a link to a postman collection with the API endpoints: [Postman collecti
 
 The API and the database are deployed on Azure
 
+Download the app here: https://com-thejohnsondev-isafe.en.uptodown.com/android
+
 ## Technologies
 - **.Net** - framework for the web application
 - **Asp.Net MVC** - for the web API
@@ -55,7 +57,3 @@ The endpoint DELETE Auth/DeleteAllData removes all user related data from the da
 Allows refresh the access token
 
 The endpoint GET Auth/RefreshToken refreshes the user access token
-
-## Get the mobile application
-
-[Here](https://drive.google.com/file/d/198fBBzZ_MUPYtgHmBgLGvzp_CwkuL7QM/view?usp=sharing) is a link to the mobile application .apk. You can install it and see the API in action!## Architecture

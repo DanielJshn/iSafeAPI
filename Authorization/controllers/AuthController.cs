@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics.Tracing;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -38,26 +39,58 @@ namespace apitest
             _notesService = notesService;
 
         }
+        [AllowAnonymous]
+        [HttpPost("Encr")]
+        public IActionResult Encrypted(UserForRegistrationDto userForRegistration)
+        {
 
+            string base64Key = _keycon.GetSecretKey();
+            string base64IV = _keycon.GetIV();
+
+            string encryptedEmail = EncryptStringAES(userForRegistration.Email, base64Key, base64IV);
+            string encryptedPassword = EncryptStringAES(userForRegistration.Password, base64Key, base64IV);
+
+            var result = new
+            {
+                EncryptedEmail = encryptedEmail,
+                EncryptedPassword = encryptedPassword,
+                Key = base64Key,
+                IV = base64IV
+            };
+
+            return Ok(result);
+        }
 
         [AllowAnonymous]
         [HttpPost("Register")]
         public async Task<IActionResult> Register(UserForRegistrationDto userForRegistration)
         {
-           string token;
+            string token;
+            string base64Key = _keycon.GetSecretKey();
+            string base64IV = _keycon.GetIV();
 
 
-            string secretKey = _keycon.GetSecretKey();
 
-            string decryptedEmail = DecryptStringAES(userForRegistration.Email, secretKey);
-            string decryptedPassword = DecryptStringAES(userForRegistration.Password, secretKey);
+            byte[] keyBytes = Convert.FromBase64String(base64Key);
+            byte[] ivBytes = Convert.FromBase64String(base64IV);
+
+
+            if (keyBytes.Length != 32)
+                throw new ArgumentException("Invalid key length. Must be 32 bytes for AES-256.");
+            if (ivBytes.Length != 16)
+                throw new ArgumentException("Invalid IV length. Must be 16 bytes for AES.");
+
+
+            string decryptedEmail = DecryptStringAES(userForRegistration.Email, base64Key, base64IV);
+            string decryptedPassword = DecryptStringAES(userForRegistration.Password, base64Key, base64IV);
+
 
             userForRegistration.Email = decryptedEmail;
             userForRegistration.Password = decryptedPassword;
 
             try
             {
-               await _authService.CheckUserAsync(userForRegistration);
+                await _authService.CheckUserAsync(userForRegistration);
                 token = await _authService.RegistrEndInsertAsync(userForRegistration);
             }
             catch (Exception ex)
@@ -66,7 +99,9 @@ namespace apitest
             }
             return Ok(new { Token = token });
         }
-        
+
+
+
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -76,23 +111,24 @@ namespace apitest
             try
             {
                 string secretKey = _keycon.GetSecretKey();
+                string secretIv = _keycon.GetIV();
 
-                string decryptedEmail = DecryptStringAES(userForLogin.Email, secretKey);
-                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey);
+                string decryptedEmail = DecryptStringAES(userForLogin.Email, secretKey, secretIv);
+                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey, secretIv);
 
                 userForLogin.Email = decryptedEmail;
                 userForLogin.Password = decryptedPassword;
 
                 string token = await _authService.CheckEmailAsync(userForLogin);
                 await _authService.CheckPasswordAsync(userForLogin);
-                int userId =  _authHelp.GetUserIdFromToken(token);
+                int userId = _authHelp.GetUserIdFromToken(token);
                 if (userId == 0)
                 {
                     return BadRequest("Cannot find this user");
                 }
                 newToken = _authHelp.GenerateNewToken(userId);
 
-                bool tokenUpdated =  _authHelp.UpdateTokenValueInDatabase(userId, newToken);
+                bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
             }
             catch (Exception ex)
             {
@@ -117,8 +153,8 @@ namespace apitest
                 return BadRequest("Invalid Refresh Token");
             }
 
-            string newToken =  _authHelp.GenerateNewToken(userId);
-            bool tokenUpdated =  _authHelp.UpdateTokenValueInDatabase(userId, newToken);
+            string newToken = _authHelp.GenerateNewToken(userId);
+            bool tokenUpdated = _authHelp.UpdateTokenValueInDatabase(userId, newToken);
             if (!tokenUpdated)
             {
                 return StatusCode(500, "Failed to update token in the database");
@@ -126,6 +162,7 @@ namespace apitest
 
             return Ok(new { Token = newToken });
         }
+
 
         [HttpDelete("DeleteAllData")]
         public async Task<IActionResult> DeletedAllData()
@@ -144,6 +181,7 @@ namespace apitest
             }
             return Ok("Account deleted");
         }
+        
 
         [HttpPut("ChangePassword")]
         public async Task<IActionResult> ChangePassword(UserForChangePassword userForLogin)
@@ -151,9 +189,12 @@ namespace apitest
             int userId = getUserId();
             try
             {
+
+                string secretIv = _keycon.GetIV();
+
                 string secretKey = _keycon.GetSecretKey();
-                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey);
-                string decryptedNewPassword = DecryptStringAES(userForLogin.NewPassword, secretKey);
+                string decryptedPassword = DecryptStringAES(userForLogin.Password, secretKey, secretIv);
+                string decryptedNewPassword = DecryptStringAES(userForLogin.NewPassword, secretKey, secretIv);
                 userForLogin.Password = decryptedPassword;
                 userForLogin.NewPassword = decryptedNewPassword;
 
@@ -167,7 +208,7 @@ namespace apitest
                     throw new Exception("Current password is incorrect");
                 }
 
-                byte[] newPasswordHash =  _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
+                byte[] newPasswordHash = _authHelp.GetPasswordHash(userForLogin.NewPassword, passwordSalt);
 
                 await _authService.ChangeUserPasswordAsync(userId, newPasswordHash);
 
@@ -180,32 +221,82 @@ namespace apitest
         }
 
 
-         [NonAction]
-         static string DecryptStringAES(string cipherText, string key)
+        [NonAction]
+        public static string DecryptStringAES(string cipherText, string key, string iv)
         {
             byte[] cipherBytes = Convert.FromBase64String(cipherText);
+            byte[] keyBytes = Convert.FromBase64String(key);
+            byte[] ivBytes = Convert.FromBase64String(iv);
+            Console.WriteLine($"Before key{keyBytes}" + $"After{key}");
+            Console.WriteLine($"Before iv {ivBytes}" + $"After{iv}");
+            // Проверка длины ключа и IV
+            if (keyBytes.Length != 32) // Для AES-256 требуется ключ длиной 32 байта
+                throw new ArgumentException("Invalid key length. Must be 32 bytes for AES-256.");
+            if (ivBytes.Length != 16) // IV для AES-CBC должен быть 16 байт
+                throw new ArgumentException("Invalid IV length. Must be 16 bytes for AES-CBC.");
 
-            using (Aes aesAlg = Aes.Create())
+            using (Aes aes = Aes.Create())
             {
-                aesAlg.KeySize = 128;
-                aesAlg.BlockSize = 128;
-                aesAlg.Mode = CipherMode.ECB;
-                aesAlg.Padding = PaddingMode.PKCS7;
+                aes.KeySize = 256; // Для AES-256
+                aes.BlockSize = 128; // Блокировка 128 бит (16 байт)
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Key = keyBytes;
+                aes.IV = ivBytes;
 
-                aesAlg.Key = Encoding.UTF8.GetBytes(key);
-
-                using (MemoryStream msDecrypt = new MemoryStream(cipherBytes))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV), CryptoStreamMode.Read))
+                    using (MemoryStream msDecrypt = new MemoryStream(cipherBytes))
                     {
-                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            return srDecrypt.ReadToEnd();
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                return srDecrypt.ReadToEnd();
+                            }
                         }
                     }
                 }
             }
         }
+        
+        [NonAction]
+        public static string EncryptStringAES(string plainText, string base64Key, string base64IV)
+        {
+            byte[] keyBytes = Convert.FromBase64String(base64Key);
+            byte[] ivBytes = Convert.FromBase64String(base64IV);
+
+            if (keyBytes.Length != 32) // Для AES-256 требуется 32 байта ключа
+                throw new ArgumentException("Invalid key length. Must be 32 bytes for AES-256.");
+            if (ivBytes.Length != 16) // IV должен быть 16 байт
+                throw new ArgumentException("Invalid IV length. Must be 16 bytes for AES.");
+
+            using (Aes aes = Aes.Create())
+            {
+                aes.KeySize = 256; // Для AES-256
+                aes.BlockSize = 128; // Блокировка 128 бит (16 байт)
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Key = keyBytes;
+                aes.IV = ivBytes;
+
+                using (ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                {
+                    using (MemoryStream msEncrypt = new MemoryStream())
+                    {
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                        {
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                swEncrypt.Write(plainText);
+                            }
+                        }
+                        return Convert.ToBase64String(msEncrypt.ToArray());
+                    }
+                }
+            }
+        }
+
 
         [NonAction]
         public int getUserId()

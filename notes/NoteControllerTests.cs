@@ -32,7 +32,6 @@ namespace apitest
 
             // Act
             var result = await _controller!.AddNote(noteDto) as OkObjectResult;
-
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(200, result?.StatusCode);

@@ -32,13 +32,16 @@ namespace apitest
 
             // Act
             var result = await _controller!.AddNote(noteDto) as OkObjectResult;
-
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(200, result?.StatusCode);
-            Assert.AreNotEqual(createdNoteDto, result?.Value); // Изменено на неверное значение
-        }
 
+            var returnedNote = result?.Value as NoteDto;
+            Assert.IsNotNull(returnedNote);
+            Assert.AreEqual(createdNoteDto.id, returnedNote?.id);
+            Assert.AreEqual(createdNoteDto.title, returnedNote?.title);
+            Assert.AreEqual(createdNoteDto.description, returnedNote?.description);
+        }
 
         [Test]
         public async Task AddNote_ShouldReturnBadRequest_WhenExceptionIsThrown()

@@ -4,7 +4,8 @@ services:
   myapi:
     image: myapi:latest  # Имя образа, созданного по вашему Dockerfile
     build:
-      context: .  # Контекст сборки, указывает на корневую директорию с Dockerfile
+      context: .  # Используем текущую директорию для сборки
+      dockerfile: Dockerfile  # Используем относительный путь
     ports:
       - "80:80"     # Пробрасываем порт 80 для HTTP
       - "443:443"   # Пробрасываем порт 443 для HTTPS

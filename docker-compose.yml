@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  myapi:
+    image: myapi:latest  # Имя образа, созданного по вашему Dockerfile
+    build:
+      context: .  # Контекст сборки, указывает на корневую директорию с Dockerfile
+    ports:
+      - "80:80"     # Пробрасываем порт 80 для HTTP
+      - "443:443"   # Пробрасываем порт 443 для HTTPS
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development  # Установите в Production, если это продакшн
+    volumes:
+      - .:/app  # Монтирование текущей директории в контейнер, чтобы увидеть изменения
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

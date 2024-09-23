@@ -94,7 +94,7 @@ namespace apitest
             string? tokenKeyString = _config.GetSection("AppSettings:TokenKey").Value;
             SymmetricSecurityKey tokenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKeyString ?? ""));
 
-            SigningCredentials credentials = new SigningCredentials(tokenKey, SecurityAlgorithms.HmacSha512Signature);
+            SigningCredentials credentials = new SigningCredentials(tokenKey, SecurityAlgorithms.HmacSha256Signature);
 
             SecurityTokenDescriptor descriptor = new SecurityTokenDescriptor()
             {

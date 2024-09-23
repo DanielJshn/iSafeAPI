@@ -1,6 +1,5 @@
-**/bin
-**/obj
-**/.vs
-**/*.suo
-**/*.user
-**/*.git
+bin/
+obj/
+*.user
+*.suo
+*.sln

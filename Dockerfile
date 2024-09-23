@@ -1,34 +1,25 @@
-# Используем .NET SDK 7.0 для этапа сборки
+
+# Установка базового образа для ASP.NET Core 8.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+# Используем SDK образ для сборки (для .NET 8.0)
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-
-# Обновляем пакеты и устанавливаем необходимые зависимости в промежуточном контейнере
-RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Копируем проект и восстанавливаем зависимости
 COPY ["TestAPI.csproj", "./"]
-RUN dotnet restore "TestAPI.csproj"
-
-# Копируем оставшиеся файлы и собираем проект
+RUN dotnet restore "./TestAPI.csproj"
 COPY . .
-RUN dotnet build --configuration Release --output /app/build
+WORKDIR "/src/"
+RUN dotnet build "TestAPI.csproj" -c Release -o /app/build
 
-# Используем .NET SDK 7.0 для этапа публикации
+# Публикуем проект в папку /app/publish
 FROM build AS publish
-RUN dotnet publish --configuration Release --output /app/publish
+RUN dotnet publish "TestAPI.csproj" -c Release -o /app/publish
 
-# Используем .NET Runtime 7.0 для финального этапа
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final
+# Используем базовый образ для финального контейнера
+FROM base AS final
 WORKDIR /app
-
-# Обновляем пакеты в финальном контейнере
-RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Копируем опубликованные файлы из предыдущего этапа
 COPY --from=publish /app/publish .
-
-# Указываем порт, на котором будет работать приложение
-EXPOSE 80
-
-# Определяем команду для запуска приложения
 ENTRYPOINT ["dotnet", "TestAPI.dll"]

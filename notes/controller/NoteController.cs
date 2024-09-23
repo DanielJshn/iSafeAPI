@@ -19,6 +19,19 @@ public class NoteController : ControllerBase
         _notesService = notesService;
     }
 
+    [HttpGet]
+    public IActionResult GetRoot()
+    {
+        try
+        {
+            return Ok("API is running. Use /note/AddNote to add a note.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
     [HttpPost("AddNote")]
     public async Task<IActionResult> AddNote(NoteDto note)
     {
